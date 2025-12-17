@@ -1,8 +1,10 @@
 'use client';
 import { useState } from 'react';
 import axios from 'axios';
+import { useSession, signIn, signOut } from "next-auth/react";
 
 export default function Home() {
+    const { data: session } = useSession();
   const [problem, setProblem] = useState('');
   const [code, setCode] = useState('');
   const [level, setLevel] = useState('beginner');
@@ -31,7 +33,26 @@ export default function Home() {
   }
 
   return (
+    
     <main className="min-h-screen bg-zinc-900 text-white p-6">
+                <div className="flex justify-end mb-4">
+          {!session ? (
+            <button
+              onClick={() => signIn("github")}
+              className="px-4 py-2 bg-zinc-800 rounded"
+            >
+              Login with GitHub
+            </button>
+          ) : (
+            <button
+              onClick={() => signOut()}
+              className="px-4 py-2 bg-zinc-800 rounded"
+            >
+              Logout
+            </button>
+          )}
+        </div>
+      
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold mb-2">🐆 CheetCode</h1>
         <p className="text-zinc-400 mb-6">
