@@ -3,10 +3,10 @@ import { AnalysisService } from './analysis.service';
 
 @Controller('analyze')
 export class AnalysisController {
-  constructor(private service: AnalysisService) {}
+  constructor(private readonly service: AnalysisService) {}
 
   @Post()
-  analyze(@Body() body: any) {
+  async analyze(@Body() body: any) {
     return this.service.analyze(body);
   }
 }
