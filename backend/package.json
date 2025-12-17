@@ -1,0 +1,14 @@
+{
+  "name": "cheetcode-backend",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "nest start"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/core": "^10.0.0",
+    "openai": "^4.0.0",
+    "reflect-metadata": "^0.1.13",
+    "rxjs": "^7.8.0"
+  }
+}
