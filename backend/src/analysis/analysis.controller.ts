@@ -1,16 +1,13 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query } from '@nestjs/common';
 import { AnalysisService } from './analysis.service';
-import { Get, Query } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-
 
 @Controller('analyze')
 export class AnalysisController {
   constructor(
-    private analysisService: AnalysisService,
-    private prisma: PrismaService,
+    private readonly analysisService: AnalysisService,
+    private readonly prisma: PrismaService,
   ) {}
-
 
   @Post()
   async analyze(@Body() body: any) {
@@ -26,7 +23,7 @@ export class AnalysisController {
     return this.prisma.submission.findMany({
       where: {
         user: {
-          email: email,
+          email,
         },
       },
       orderBy: {
@@ -35,4 +32,38 @@ export class AnalysisController {
     });
   }
 
+  @Get('stats')
+  async stats(@Query('email') email: string) {
+    if (!email) {
+      return {
+        total: 0,
+        beginner: 0,
+        intermediate: 0,
+        advanced: 0,
+      };
+    }
+
+    const submissions = await this.prisma.submission.findMany({
+      where: {
+        user: {
+          email,
+        },
+      },
+    });
+
+    const stats = {
+      total: submissions.length,
+      beginner: 0,
+      intermediate: 0,
+      advanced: 0,
+    };
+
+    submissions.forEach((s) => {
+      if (stats[s.level] !== undefined) {
+        stats[s.level]++;
+      }
+    });
+
+    return stats;
+  }
 }

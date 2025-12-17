@@ -58,6 +58,7 @@ Tasks:
           problem: data.problem,
           code: data.code,
           analysis: analysisText,
+          level: data.level,
           userId: userId,
         },
       });
