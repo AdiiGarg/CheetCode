@@ -5,6 +5,10 @@
     "start": "nest start",
     "start:prod": "node dist/main.js"
   },
+  "engines": {
+    "node": ">=18"
+  },
+
   "dependencies": {
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^4.0.2",
