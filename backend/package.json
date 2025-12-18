@@ -2,7 +2,7 @@
   "name": "cheetcode-backend",
   "version": "1.0.0",
   "scripts": {
-    "start": "nest start"
+    "start": "nest start",
     "start:prod": "node dist/main.js"
   },
   "dependencies": {
