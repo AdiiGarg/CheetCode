@@ -15,7 +15,7 @@ export default function Home() {
   const [error, setError] = useState('');
     useEffect(() => {
       if (session?.user?.email) {
-        axios.post("http://localhost:3001/auth/sync", {
+        axios.post("${process.env.NEXT_PUBLIC_API_URL}/auth/sync", {
           email: session.user.email,
           name: session.user.name,
         });
@@ -29,7 +29,7 @@ export default function Home() {
       setError('');
       setResult('');
 
-      const res = await axios.post('http://localhost:3001/analyze', {
+      const res = await axios.post('${process.env.NEXT_PUBLIC_API_URL}/analyze', {
         problem,
         code,
         level,
