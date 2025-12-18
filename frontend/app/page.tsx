@@ -1,43 +1,66 @@
 'use client';
-import { useState } from 'react';
-import axios from 'axios';
-import { useSession, signIn, signOut } from "next-auth/react";
-import { useEffect } from "react";
 
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useSession, signIn, signOut } from 'next-auth/react';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 export default function Home() {
-    const { data: session } = useSession();
+  const { data: session } = useSession();
+
   const [problem, setProblem] = useState('');
   const [code, setCode] = useState('');
   const [level, setLevel] = useState('beginner');
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-    useEffect(() => {
-      if (session?.user?.email) {
-        axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/sync`, {
-          email: session.user.email,
-          name: session.user.name,
-        });
-      }
-    }, [session]);
 
+  // 🔹 Debug: confirm backend URL is injected
+  useEffect(() => {
+    console.log('BACKEND_URL:', BACKEND_URL);
+  }, []);
+
+  // 🔹 Sync user with backend after login
+  useEffect(() => {
+    if (!session?.user?.email || !BACKEND_URL) return;
+
+    axios
+      .post(`${BACKEND_URL}/auth/sync`, {
+        email: session.user.email,
+        name: session.user.name,
+      })
+      .catch((err) => {
+        console.error('Auth sync failed:', err);
+      });
+  }, [session]);
 
   async function analyze() {
+    if (!BACKEND_URL) {
+      setError('Backend URL not configured');
+      return;
+    }
+
+    if (!session?.user?.email) {
+      setError('Please login first');
+      return;
+    }
+
     try {
       setLoading(true);
       setError('');
       setResult('');
 
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/analyze`, {
+      const res = await axios.post(`${BACKEND_URL}/analyze`, {
         problem,
         code,
         level,
-        email: session?.user?.email,
+        email: session.user.email,
       });
 
       setResult(res.data.result);
     } catch (err) {
+      console.error(err);
       setError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
@@ -45,26 +68,26 @@ export default function Home() {
   }
 
   return (
-    
     <main className="min-h-screen bg-zinc-900 text-white p-6">
-                <div className="flex justify-end mb-4">
-          {!session ? (
-            <button
-              onClick={() => signIn("github")}
-              className="px-4 py-2 bg-zinc-800 rounded"
-            >
-              Login with GitHub
-            </button>
-          ) : (
-            <button
-              onClick={() => signOut()}
-              className="px-4 py-2 bg-zinc-800 rounded"
-            >
-              Logout
-            </button>
-          )}
-        </div>
-      
+      {/* 🔹 Auth buttons */}
+      <div className="flex justify-end mb-4">
+        {!session ? (
+          <button
+            onClick={() => signIn('github')}
+            className="px-4 py-2 bg-zinc-800 rounded"
+          >
+            Login with GitHub
+          </button>
+        ) : (
+          <button
+            onClick={() => signOut()}
+            className="px-4 py-2 bg-zinc-800 rounded"
+          >
+            Logout
+          </button>
+        )}
+      </div>
+
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold mb-2">🐆 CheetCode</h1>
         <p className="text-zinc-400 mb-6">
@@ -108,13 +131,14 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Result */}
+        {/* Error */}
         {error && (
           <div className="bg-red-500/20 border border-red-500 p-4 rounded mb-4">
             {error}
           </div>
         )}
 
+        {/* Result */}
         {result && (
           <div className="bg-zinc-800 p-6 rounded-xl whitespace-pre-wrap">
             <h2 className="text-xl font-semibold mb-2">Analysis</h2>
