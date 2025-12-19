@@ -210,6 +210,16 @@ public class Main {
             <option value="javascript">JavaScript</option>
           </select>
 
+
+          <textarea
+            disabled={leetcodeFetched}
+            className="w-full bg-zinc-900 border border-zinc-700 p-3 rounded"
+            rows={4}
+            placeholder="Paste problem statement / link / question number"
+            value={problem}
+            onChange={(e) => setProblem(e.target.value)}
+          />
+
           <button
             onClick={fetchFromLeetCode}
             disabled={leetcodeLoading}
@@ -221,14 +231,6 @@ public class Main {
           {leetcodeError && (
             <p className="text-red-400 text-sm">{leetcodeError}</p>
           )}
-          <textarea
-            disabled={leetcodeFetched}
-            className="w-full bg-zinc-900 border border-zinc-700 p-3 rounded"
-            rows={4}
-            placeholder="Paste problem statement / link / question number"
-            value={problem}
-            onChange={(e) => setProblem(e.target.value)}
-          />
                   
 
 
@@ -285,6 +287,7 @@ public class Main {
                   : 'text-red-400'
               }`}
             >
+              {detectedLevel}
             </span>
           </div>
         )}
