@@ -92,9 +92,9 @@ ${data.code}
 `;
 
       const response = await this.groq.chat.completions.create({
-        model: 'llama3-70b-8192',
+        model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.2,
+        temperature: 0.3,
       });
 
       const raw = response.choices[0]?.message?.content || '{}';
