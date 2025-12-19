@@ -53,7 +53,7 @@ ${code}
     try {
       // 🔐 Auth guard
       if (!data.email) {
-        return { result: 'User not authenticated.' };
+        return { error: 'User not authenticated.' };
       }
 
       const user = await this.prisma.user.findUnique({
@@ -61,47 +61,44 @@ ${code}
       });
 
       if (!user) {
-        return { result: 'User not found in database.' };
+        return { error: 'User not found in database.' };
       }
 
-      // 🔍 Detect difficulty FIRST
+      // 🔍 Detect difficulty first
       const detectedLevel = await this.detectDifficulty(
         data.problem,
         data.code,
       );
 
-      // 🧠 Main analysis prompt
+      // 🧠 STRUCTURED PROMPT (MOST IMPORTANT PART)
       const prompt = `
 You are a competitive programming mentor.
 
-Detected difficulty: ${detectedLevel}
+Analyze the following submission and return ONLY valid JSON.
+NO markdown. NO extra text. NO explanations outside JSON.
+
+JSON FORMAT:
+{
+  "explanation": string,
+  "timeComplexity": string,
+  "spaceComplexity": string,
+  "betterApproaches": [
+    {
+      "title": string,
+      "description": string,
+      "code": string,
+      "timeComplexity": string,
+      "spaceComplexity": string
+    }
+  ],
+  "nextSteps": string
+}
 
 Problem:
 ${data.problem}
 
-User code:
+User Code:
 ${data.code}
-
-Respond in the following EXACT format:
-
-### EXPLANATION
-- Explain the approach clearly
-
-### TIME_COMPLEXITY
-- Time complexity of user's code
-- Space complexity of user's code
-
-### BETTER_APPROACHES
-Provide 3 better approaches.
-For each approach:
-- Short explanation
-- Time & Space complexity
-- Code snippet
-
-### NEXT_STEPS
-- What topics to improve
-- 2–3 next LeetCode problems to solve
-
 `;
 
       const response = await this.openai.chat.completions.create({
@@ -109,31 +106,45 @@ For each approach:
         messages: [{ role: 'user', content: prompt }],
       });
 
-      const analysisText =
-        response.choices[0].message.content ?? '';
+      const raw = response.choices[0].message.content ?? '{}';
 
-      // 💾 Save submission
+      // 🛡️ Safe JSON parse
+      let parsedAnalysis: any;
+      try {
+        parsedAnalysis = JSON.parse(raw);
+      } catch (err) {
+        parsedAnalysis = {
+          explanation: raw,
+          timeComplexity: '',
+          spaceComplexity: '',
+          betterApproaches: [],
+          nextSteps: '',
+        };
+      }
+
+      // 💾 Save submission (raw text also preserved)
       const submission = await this.prisma.submission.create({
         data: {
           problem: data.problem,
           code: data.code,
-          analysis: analysisText,
-          level: detectedLevel, // easy | medium | hard
+          analysis: raw,
+          level: detectedLevel,
           user: {
             connect: { id: user.id },
           },
         },
       });
 
+      // ✅ FINAL RESPONSE (frontend-friendly)
       return {
         id: submission.id,
-        result: submission.analysis,
         level: detectedLevel,
+        analysis: parsedAnalysis,
       };
     } catch (error) {
       console.error('Analyze error:', error);
       return {
-        result:
+        error:
           'Error while analyzing code. Please check backend logs for details.',
       };
     }
@@ -170,7 +181,7 @@ ${summary}
 Identify:
 1. Weak areas
 2. Topics to improve
-3. 3 recommended next problem types (LeetCode focused)
+3. 3 recommended next LeetCode problem types
 
 Be concise and actionable.
 `;
