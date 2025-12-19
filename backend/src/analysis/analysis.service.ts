@@ -12,6 +12,43 @@ export class AnalysisService {
     });
   }
 
+  // ===================== AUTO DIFFICULTY DETECTION =====================
+  private async detectDifficulty(
+    problem: string,
+    code: string,
+  ): Promise<'easy' | 'medium' | 'hard'> {
+    const prompt = `
+You are a competitive programming expert.
+
+Based on the problem statement and solution code below,
+classify the difficulty as ONE of:
+easy, medium, hard.
+
+Return ONLY one word.
+
+Problem:
+${problem}
+
+Code:
+${code}
+`;
+
+    const response = await this.openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const raw =
+      response.choices[0].message.content
+        ?.toLowerCase()
+        .trim() || 'easy';
+
+    if (raw.includes('hard')) return 'hard';
+    if (raw.includes('medium')) return 'medium';
+
+    return 'easy';
+  }
+
   // ===================== ANALYZE CODE =====================
   async analyze(data: any) {
     try {
@@ -28,18 +65,17 @@ export class AnalysisService {
         return { result: 'User not found in database.' };
       }
 
-      // ✅ HARD NORMALIZATION (dashboard-safe)
-      const level: 'beginner' | 'intermediate' | 'advanced' =
-        data.level === 'beginner' ||
-        data.level === 'intermediate' ||
-        data.level === 'advanced'
-          ? data.level
-          : 'beginner';
+      // 🔍 Detect difficulty FIRST
+      const detectedLevel = await this.detectDifficulty(
+        data.problem,
+        data.code,
+      );
 
+      // 🧠 Main analysis prompt
       const prompt = `
 You are a competitive programming mentor.
 
-User level: ${level}
+Detected difficulty: ${detectedLevel}
 
 Problem:
 ${data.problem}
@@ -60,15 +96,16 @@ Tasks:
         messages: [{ role: 'user', content: prompt }],
       });
 
-      const analysisText = response.choices[0].message.content ?? '';
+      const analysisText =
+        response.choices[0].message.content ?? '';
 
-      // 💾 SAVE SUBMISSION
+      // 💾 Save submission
       const submission = await this.prisma.submission.create({
         data: {
           problem: data.problem,
           code: data.code,
           analysis: analysisText,
-          level,
+          level: detectedLevel, // easy | medium | hard
           user: {
             connect: { id: user.id },
           },
@@ -78,6 +115,7 @@ Tasks:
       return {
         id: submission.id,
         result: submission.analysis,
+        level: detectedLevel,
       };
     } catch (error) {
       console.error('Analyze error:', error);
@@ -105,7 +143,7 @@ Tasks:
     const summary = submissions
       .map(
         (s, i) =>
-          `${i + 1}. Level: ${s.level}\nProblem: ${s.problem}`,
+          `${i + 1}. Difficulty: ${s.level}\nProblem: ${s.problem}`,
       )
       .join('\n\n');
 
@@ -119,7 +157,7 @@ ${summary}
 Identify:
 1. Weak areas
 2. Topics to improve
-3. 3 recommended next problem types
+3. 3 recommended next problem types (LeetCode focused)
 
 Be concise and actionable.
 `;
