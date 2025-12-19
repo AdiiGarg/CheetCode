@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import OpenAI from 'openai';
 import { PrismaService } from '../prisma/prisma.service';
+import Groq from 'groq-sdk';
 
 @Injectable()
 export class AnalysisService {
-  private openai: OpenAI;
+  private groq: Groq;
 
   constructor(private readonly prisma: PrismaService) {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+    this.groq = new Groq({
+      apiKey: process.env.GROQ_API_KEY,
     });
   }
 
@@ -17,27 +17,24 @@ export class AnalysisService {
     problem: string,
     code: string,
   ): Promise<'easy' | 'medium' | 'hard'> {
-    const response = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'user',
-          content: `
-Classify difficulty as ONE word only:
-easy, medium, or hard.
+    const prompt = `
+Classify the difficulty of this coding problem.
+Return ONLY one word: easy | medium | hard.
 
 Problem:
 ${problem}
 
 Code:
 ${code}
-`,
-        },
-      ],
+`;
+
+    const res = await this.groq.chat.completions.create({
+      model: 'llama3-8b-8192',
+      messages: [{ role: 'user', content: prompt }],
     });
 
     const raw =
-      response.choices[0].message.content?.toLowerCase() ?? 'easy';
+      res.choices[0]?.message?.content?.toLowerCase().trim() || 'easy';
 
     if (raw.includes('hard')) return 'hard';
     if (raw.includes('medium')) return 'medium';
@@ -48,7 +45,7 @@ ${code}
   async analyze(data: any) {
     try {
       if (!data.email) {
-        return { error: 'User not authenticated' };
+        return { error: 'User not authenticated.' };
       }
 
       const user = await this.prisma.user.findUnique({
@@ -56,7 +53,7 @@ ${code}
       });
 
       if (!user) {
-        return { error: 'User not found' };
+        return { error: 'User not found.' };
       }
 
       const detectedLevel = await this.detectDifficulty(
@@ -64,17 +61,13 @@ ${code}
         data.code,
       );
 
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        response_format: { type: 'json_object' }, // 🔥 FORCE JSON
-        messages: [
-          {
-            role: 'user',
-            content: `
+      const prompt = `
 You are a competitive programming mentor.
 
-Return ONLY valid JSON in this format:
+Return ONLY valid JSON.
+No markdown. No explanation outside JSON.
 
+JSON FORMAT:
 {
   "explanation": string,
   "timeComplexity": string,
@@ -96,43 +89,53 @@ ${data.problem}
 
 User Code:
 ${data.code}
-`,
-          },
-        ],
+`;
+
+      const response = await this.groq.chat.completions.create({
+        model: 'llama3-70b-8192',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.2,
       });
 
-      const parsedAnalysis = JSON.parse(
-        response.choices[0].message.content ?? '{}',
-      );
+      const raw = response.choices[0]?.message?.content || '{}';
 
-      // 💾 Save submission (raw JSON saved for history)
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        parsed = {
+          explanation: raw,
+          timeComplexity: '',
+          spaceComplexity: '',
+          betterApproaches: [],
+          nextSteps: '',
+        };
+      }
+
       const submission = await this.prisma.submission.create({
         data: {
           problem: data.problem,
           code: data.code,
-          analysis: JSON.stringify(parsedAnalysis),
+          analysis: raw,
           level: detectedLevel,
-          user: {
-            connect: { id: user.id },
-          },
+          user: { connect: { id: user.id } },
         },
       });
 
-      // ✅ FINAL API RESPONSE
       return {
         id: submission.id,
         level: detectedLevel,
-        analysis: parsedAnalysis,
+        analysis: parsed,
       };
-    } catch (error) {
-      console.error('Analyze error:', error);
+    } catch (err) {
+      console.error('Groq analyze error:', err);
       return {
-        error: 'Error while analyzing code.',
+        error: 'Analysis failed. Check backend logs.',
       };
     }
   }
 
-  // ===================== AI RECOMMENDATIONS =====================
+  // ===================== RECOMMENDATIONS =====================
   async getRecommendations(email: string) {
     const submissions = await this.prisma.submission.findMany({
       where: { user: { email } },
@@ -141,35 +144,27 @@ ${data.code}
     });
 
     if (submissions.length === 0) {
-      return 'Not enough data to generate recommendations.';
+      return 'Not enough data.';
     }
 
     const summary = submissions
-      .map(
-        (s, i) =>
-          `${i + 1}. Difficulty: ${s.level}\nProblem: ${s.problem}`,
-      )
+      .map((s) => `Level: ${s.level}\nProblem: ${s.problem}`)
       .join('\n\n');
 
-    const response = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'user',
-          content: `
-Based on these submissions:
-
-${summary}
-
-Tell:
+    const prompt = `
+Based on these submissions, suggest:
 1. Weak areas
 2. Topics to improve
-3. 3 next LeetCode problem types
-`,
-        },
-      ],
+3. 3 next LeetCode problems
+
+${summary}
+`;
+
+    const res = await this.groq.chat.completions.create({
+      model: 'llama3-8b-8192',
+      messages: [{ role: 'user', content: prompt }],
     });
 
-    return response.choices[0].message.content ?? '';
+    return res.choices[0]?.message?.content || '';
   }
 }

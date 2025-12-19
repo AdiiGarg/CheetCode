@@ -16,6 +16,7 @@
     "@nestjs/core": "^10.0.0",
     "@nestjs/platform-express": "^10.4.20",
     "@prisma/client": "^5.22.0",
+    "groq-sdk": "^0.37.0",
     "openai": "^4.0.0",
     "prisma": "^5.22.0",
     "reflect-metadata": "^0.1.13",
