@@ -16,6 +16,7 @@
     "@nestjs/core": "^10.0.0",
     "@nestjs/platform-express": "^10.4.20",
     "@prisma/client": "^5.22.0",
+    "axios": "^1.13.2",
     "groq-sdk": "^0.37.0",
     "openai": "^4.0.0",
     "prisma": "^5.22.0",
@@ -23,6 +24,7 @@
     "rxjs": "^7.8.0"
   },
   "devDependencies": {
-    "@nestjs/cli": "^11.0.14"
+    "@nestjs/cli": "^11.0.14",
+    "@types/node": "^25.0.3"
   }
 }
