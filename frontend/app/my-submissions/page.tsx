@@ -8,6 +8,7 @@ type Submission = {
   id: string;
   problem: string;
   level: string;
+  code: string;
   analysis: string;
   createdAt: string;
 };
@@ -86,8 +87,43 @@ export default function MySubmissionsPage() {
               </p>
 
               {openId === sub.id && (
-                <div className="mt-4 bg-zinc-900 p-3 rounded text-sm whitespace-pre-wrap text-zinc-200">
-                  {sub.analysis}
+                <div className="mt-4 space-y-4">
+
+                  {/* 🔹 Full Problem */}
+                  <div className="bg-zinc-900 p-3 rounded">
+                    <p className="text-xs text-zinc-400 mb-1">Problem</p>
+                    <p className="text-sm text-zinc-200 whitespace-pre-wrap">
+                      {sub.problem}
+                    </p>
+                  </div>
+
+                  {/* 🔹 User Code */}
+                <div className="bg-zinc-900 p-3 rounded relative">
+                  <p className="text-xs text-zinc-400 mb-1">Your Code</p>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.writeText(sub.code);
+                    }}
+                    className="absolute top-2 right-2 text-xs px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded"
+                  >
+                    Copy
+                  </button>
+                  
+                  <pre className="text-sm text-emerald-300 whitespace-pre-wrap overflow-x-auto">
+                    {sub.code}
+                  </pre>
+                </div>
+                  
+                  {/* 🔹 AI Analysis */}
+                  <div className="bg-zinc-900 p-3 rounded">
+                    <p className="text-xs text-zinc-400 mb-1">AI Analysis</p>
+                    <pre className="text-sm text-zinc-200 whitespace-pre-wrap">
+                      {sub.analysis}
+                    </pre>
+                  </div>
+
                 </div>
               )}
             </div>
