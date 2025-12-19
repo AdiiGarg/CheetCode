@@ -32,8 +32,11 @@ export default function Home() {
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('');
 
+  // 🔥 SINGLE SOURCE OF TRUTH
+  const [level, setLevel] = useState<string | null>(null);
+
+  // UI states
   const [analysis, setAnalysis] = useState<AnalysisSections | null>(null);
-  const [detectedLevel, setDetectedLevel] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('explanation');
 
   const [loading, setLoading] = useState(false);
@@ -42,7 +45,6 @@ export default function Home() {
   const [leetcodeLoading, setLeetcodeLoading] = useState(false);
   const [leetcodeError, setLeetcodeError] = useState('');
   const [leetcodeFetched, setLeetcodeFetched] = useState(false);
-
 
   const defaultCodeMap: Record<string, string> = {
     cpp: `#include <bits/stdc++.h>
@@ -75,16 +77,14 @@ public class Main {
 // write your code here`,
   };
 
-  // 🔹 Sync user after login
+  /* 🔹 Sync user */
   useEffect(() => {
     if (!session?.user?.email || !BACKEND_URL) return;
 
-    axios
-      .post(`${BACKEND_URL}/auth/sync`, {
-        email: session.user.email,
-        name: session.user.name,
-      })
-      .catch(() => {});
+    axios.post(`${BACKEND_URL}/auth/sync`, {
+      email: session.user.email,
+      name: session.user.name,
+    }).catch(() => {});
   }, [session]);
 
   function normalizeCode(code: string) {
@@ -95,8 +95,7 @@ public class Main {
       .trim();
   }
 
-
-  // 🔹 Analyze
+  /* 🔹 ANALYZE */
   async function analyze() {
     if (!BACKEND_URL) {
       setError('Backend URL not configured');
@@ -108,21 +107,24 @@ public class Main {
       return;
     }
 
+    if (!level) {
+      setError('Problem difficulty not detected yet.');
+      return;
+    }
+
     try {
       setLoading(true);
       setError('');
       setAnalysis(null);
-      setDetectedLevel(null);
       setActiveTab('explanation');
 
       const res = await axios.post(`${BACKEND_URL}/analyze`, {
         problem,
         code,
+        level, // ✅ FINAL FIX (DO NOT REMOVE)
         email: session.user.email,
       });
 
-      // ✅ Backend already returns structured JSON
-      setDetectedLevel(res.data.level);
       setAnalysis(res.data.analysis);
     } catch (err) {
       console.error(err);
@@ -132,6 +134,7 @@ public class Main {
     }
   }
 
+  /* 🔹 FETCH FROM LEETCODE */
   async function fetchFromLeetCode() {
     if (!problem.startsWith('http')) {
       setLeetcodeError('Paste a valid LeetCode problem URL');
@@ -147,13 +150,12 @@ public class Main {
         { params: { input: problem } }
       );
 
-      // Autofill problem statement
       setProblem(
         `Title: ${res.data.title}\n\n${res.data.description}`
       );
 
-      // Set difficulty from LeetCode
-      setDetectedLevel(res.data.difficulty.toLowerCase());
+      // 🔥 SET LEVEL ONCE (FINAL)
+      setLevel(res.data.difficulty.toLowerCase());
 
       setLeetcodeFetched(true);
     } catch (err) {
@@ -163,7 +165,6 @@ public class Main {
       setLeetcodeLoading(false);
     }
   }
-
 
   return (
     <main className="min-h-screen bg-zinc-900 text-white p-6">
@@ -210,12 +211,11 @@ public class Main {
             <option value="javascript">JavaScript</option>
           </select>
 
-
           <textarea
             disabled={leetcodeFetched}
             className="w-full bg-zinc-900 border border-zinc-700 p-3 rounded"
             rows={4}
-            placeholder="Paste problem statement / link / question number"
+            placeholder="Paste LeetCode problem URL"
             value={problem}
             onChange={(e) => setProblem(e.target.value)}
           />
@@ -227,19 +227,13 @@ public class Main {
           >
             {leetcodeLoading ? 'Fetching...' : 'Fetch from LeetCode'}
           </button>
-          
+
           {leetcodeError && (
             <p className="text-red-400 text-sm">{leetcodeError}</p>
           )}
-                  
-
 
           {language && (
             <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-4">
-              <p className="text-sm text-zinc-400 mb-2">
-                Paste your code below or start writing here
-              </p>
-
               <Editor
                 height="300px"
                 language={language === 'cpp' ? 'cpp' : language}
@@ -267,31 +261,15 @@ public class Main {
           </button>
         </div>
 
-        {/* Error */}
-        {error && (
-          <div className="bg-red-500/20 border border-red-500 p-4 rounded mb-4">
-            {error}
-          </div>
-        )}
-
         {/* Difficulty */}
-        {detectedLevel && (
+        {level && (
           <div className="mb-4 inline-block px-4 py-1 rounded bg-zinc-800 border border-zinc-700">
             Detected Difficulty:{' '}
-            <span
-              className={`font-semibold uppercase ${
-                detectedLevel === 'easy'
-                  ? 'text-green-400'
-                  : detectedLevel === 'medium'
-                  ? 'text-yellow-400'
-                  : 'text-red-400'
-              }`}
-            >
-              {detectedLevel}
+            <span className="font-semibold uppercase text-emerald-400">
+              {level}
             </span>
           </div>
         )}
-
 
         {/* Analysis */}
         {analysis && (
@@ -305,7 +283,7 @@ public class Main {
                     className={`px-3 py-1 rounded text-sm ${
                       activeTab === tab
                         ? 'bg-emerald-600'
-                        : 'bg-zinc-700 hover:bg-zinc-600'
+                        : 'bg-zinc-700'
                     }`}
                   >
                     {tab.toUpperCase()}
@@ -318,38 +296,19 @@ public class Main {
 
               {activeTab === 'complexity' && (
                 <>
-                  <p><b>Time Complexity:</b> {analysis.timeComplexity}</p>
-                  <p><b>Space Complexity:</b> {analysis.spaceComplexity}</p>
+                  <p><b>Time:</b> {analysis.timeComplexity}</p>
+                  <p><b>Space:</b> {analysis.spaceComplexity}</p>
                 </>
               )}
 
               {activeTab === 'approaches' &&
                 analysis.betterApproaches.map((a, i) => (
                   <div key={i} className="mb-6">
-                    <p className="font-semibold text-emerald-400">
-                      {a.title}
-                    </p>
-                    <p className="mt-1">{a.description}</p>
-
-                    <pre
-                      className="
-                        bg-black/50 
-                        p-3 
-                        rounded-lg 
-                        mt-2 
-                        text-sm 
-                        overflow-x-auto 
-                        font-mono 
-                        leading-relaxed
-                        whitespace-pre
-                      "
-                    >
+                    <p className="font-semibold text-emerald-400">{a.title}</p>
+                    <p>{a.description}</p>
+                    <pre className="bg-black/50 p-3 rounded mt-2">
                       <code>{normalizeCode(a.code)}</code>
                     </pre>
-
-                    <p className="text-xs text-zinc-400 mt-1">
-                      TC: {a.timeComplexity} | SC: {a.spaceComplexity}
-                    </p>
                   </div>
                 ))}
 
