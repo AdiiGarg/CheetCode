@@ -82,12 +82,26 @@ ${data.problem}
 User code:
 ${data.code}
 
-Tasks:
-1. Explain the approach
-2. Point out mistakes
-3. Suggest 3 better approaches
-4. Rewrite optimized code
-5. Give key takeaways
+Respond in the following EXACT format:
+
+### EXPLANATION
+- Explain the approach clearly
+
+### TIME_COMPLEXITY
+- Time complexity of user's code
+- Space complexity of user's code
+
+### BETTER_APPROACHES
+Provide 3 better approaches.
+For each approach:
+- Short explanation
+- Time & Space complexity
+- Code snippet
+
+### NEXT_STEPS
+- What topics to improve
+- 2–3 next LeetCode problems to solve
+
 `;
 
       const response = await this.openai.chat.completions.create({
