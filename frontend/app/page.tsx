@@ -148,7 +148,6 @@ public class Main {
 
       const formattedProblem = `
 Title: ${res.data.title}
-Difficulty: ${res.data.difficulty}
 
 Description:
 ${res.data.description}
