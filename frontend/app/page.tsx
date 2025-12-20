@@ -97,13 +97,13 @@ public class Main {
 
   /* 🔹 ANALYZE */
   async function analyze() {
-    if (!BACKEND_URL) {
-      setError('Backend URL not configured');
+    if (!session?.user?.email) {
+      setError('Please login first');
       return;
     }
 
-    if (!session?.user?.email) {
-      setError('Please login first');
+    if (!BACKEND_URL) {
+      setError('Backend URL not configured');
       return;
     }
 
@@ -125,13 +125,19 @@ public class Main {
         email: session.user.email,
       });
 
-      setAnalysis(res.data.analysis);
-    } catch (err) {
-      console.error(err);
+    setAnalysis(res.data.analysis);
+  } catch (err: any) {
+    console.error(err);
+
+    // 🔥 backend auth error handling
+    if (err?.response?.data?.error === 'User not authenticated.') {
+      setError('Please login to continue');
+    } else {
       setError('Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
     }
+  } finally {
+    setLoading(false);
+  }
   }
 
   /* 🔹 FETCH FROM LEETCODE */
@@ -254,10 +260,18 @@ public class Main {
 
           <button
             onClick={analyze}
-            disabled={loading}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 transition p-3 rounded font-semibold"
+            disabled={loading || !session}
+            className={`w-full transition p-3 rounded font-semibold ${
+              !session
+                ? 'bg-zinc-700 cursor-not-allowed'
+                : 'bg-emerald-600 hover:bg-emerald-700'
+            }`}
           >
-            {loading ? 'Analyzing...' : 'Analyze'}
+            {!session
+              ? 'Login to Analyze'
+              : loading
+              ? 'Analyzing...'
+              : 'Analyze'}
           </button>
         </div>
 
