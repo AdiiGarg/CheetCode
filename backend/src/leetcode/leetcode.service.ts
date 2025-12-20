@@ -5,11 +5,12 @@ import axios from 'axios';
 export class LeetCodeService {
   async fetchProblem(input: string) {
     // Extract slug from URL
-    const slug = input.split('/problems/')[1]?.split('/')[0];
-
-    if (!slug) {
+    const match = input.match(/problems\/([^/]+)/);
+    if (!match) {
       throw new Error('Invalid LeetCode URL');
     }
+
+    const slug = match[1];
 
     const query = {
       query: `
@@ -30,32 +31,38 @@ export class LeetCodeService {
       {
         headers: {
           'Content-Type': 'application/json',
-          'Referer': 'https://leetcode.com',
         },
       }
     );
 
-    const q = res.data?.data?.question;
+    const question = res.data?.data?.question;
 
-    if (!q) {
+    if (!question) {
       throw new Error('Question not found');
     }
 
     return {
-      title: q.title,
-      difficulty: q.difficulty.toLowerCase(),
-      description: this.stripHtml(q.content),
+      title: question.title,
+      difficulty: question.difficulty.toLowerCase(),
+      description: this.cleanHTML(question.content),
     };
   }
 
-  // 🔥 IMPORTANT: HTML → Plain text
-  private stripHtml(html: string): string {
+  // 🔥 IMPORTANT: HTML → clean readable text
+  private cleanHTML(html: string): string {
+    if (!html) return '';
+
     return html
-      .replace(/<[^>]+>/g, '')   // remove tags
+      .replace(/<pre>/g, '\n')
+      .replace(/<\/pre>/g, '\n')
+      .replace(/<code>/g, '')
+      .replace(/<\/code>/g, '')
+      .replace(/<[^>]+>/g, '') // remove all tags
       .replace(/&nbsp;/g, ' ')
+      .replace(/&quot;/g, '"')
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
-      .replace(/&amp;/g, '&')
+      .replace(/\n{3,}/g, '\n\n')
       .trim();
   }
 }
