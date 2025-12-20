@@ -79,6 +79,7 @@ ${data.code}
         model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
+        max_tokens: 800,
       });
 
       const raw = response.choices[0]?.message?.content || '{}';
@@ -127,7 +128,7 @@ ${data.code}
     const submissions = await this.prisma.submission.findMany({
       where: { user: { email } },
       orderBy: { createdAt: 'desc' },
-      take: 10,
+      take: 5,
     });
 
     if (submissions.length === 0) {
@@ -135,14 +136,18 @@ ${data.code}
     }
 
     const summary = submissions
-      .map((s) => `Difficulty: ${s.level}\nProblem: ${s.problem}`)
+      .map((s) => `Difficulty: ${s.level}\nProblem: ${s.problem.substring(0, 120)}`)
       .join('\n\n');
 
     const prompt = `
-Based on these submissions, suggest:
-1. Weak areas
-2. Topics to improve
-3. 3 next LeetCode problems
+You are a competitive programming mentor.
+
+Based on these submissions:
+- Identify weak areas
+- Topics to improve
+- Suggest 3 next LeetCode problems
+
+Keep answer SHORT and concise.
 
 ${summary}
 `;
@@ -150,8 +155,18 @@ ${summary}
     const res = await this.groq.chat.completions.create({
       model: 'llama-3.1-8b-instant',
       messages: [{ role: 'user', content: prompt }],
+      temperature: 0.2,
+      max_tokens: 300, // HARD LIMIT
     });
 
     return res.choices[0]?.message?.content || '';
+  } catch (err: any) {
+    // 🔥 GRACEFUL FALLBACK
+    if (err?.status === 429) {
+      console.warn('Groq rate limit hit, skipping recommendations');
+      return 'Recommendations temporarily unavailable. Try again later.';
+    }
+
+    throw err;
   }
 }
