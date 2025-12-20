@@ -3,10 +3,10 @@ import { LeetCodeService } from './leetcode.service';
 
 @Controller('leetcode')
 export class LeetCodeController {
-  constructor(private readonly leetcodeService: LeetCodeService) {}
+  constructor(private readonly leetcode: LeetCodeService) {}
 
   @Get('fetch')
   async fetch(@Query('input') input: string) {
-    return this.leetcodeService.fetchProblem(input);
+    return this.leetcode.fetchProblem(input);
   }
 }

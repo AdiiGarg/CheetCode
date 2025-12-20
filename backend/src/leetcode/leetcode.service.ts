@@ -4,7 +4,7 @@ import axios from 'axios';
 @Injectable()
 export class LeetCodeService {
   async fetchProblem(input: string) {
-    // Extract slug from URL
+    // 1️⃣ Extract slug from URL
     const match = input.match(/problems\/([^/]+)/);
     if (!match) {
       throw new Error('Invalid LeetCode URL');
@@ -12,22 +12,27 @@ export class LeetCodeService {
 
     const slug = match[1];
 
-    const query = {
-      query: `
-        query getQuestionDetail($titleSlug: String!) {
-          question(titleSlug: $titleSlug) {
-            title
-            difficulty
-            content
+    // 2️⃣ GraphQL query
+    const query = `
+      query getQuestionDetail($titleSlug: String!) {
+        question(titleSlug: $titleSlug) {
+          title
+          difficulty
+          content
+          exampleTestcases
+          topicTags {
+            name
           }
         }
-      `,
-      variables: { titleSlug: slug },
-    };
+      }
+    `;
 
     const res = await axios.post(
       'https://leetcode.com/graphql',
-      query,
+      {
+        query,
+        variables: { titleSlug: slug },
+      },
       {
         headers: {
           'Content-Type': 'application/json',
@@ -35,34 +40,28 @@ export class LeetCodeService {
       }
     );
 
-    const question = res.data?.data?.question;
-
-    if (!question) {
-      throw new Error('Question not found');
+    const q = res.data?.data?.question;
+    if (!q) {
+      throw new Error('Problem not found');
     }
 
     return {
-      title: question.title,
-      difficulty: question.difficulty.toLowerCase(),
-      description: this.cleanHTML(question.content),
+      title: q.title,
+      difficulty: q.difficulty.toLowerCase(),
+      description: this.cleanHTML(q.content),
+      examples: q.exampleTestcases,
+      tags: q.topicTags.map((t: any) => t.name),
     };
   }
 
-  // 🔥 IMPORTANT: HTML → clean readable text
+  // 🧹 Remove HTML tags safely
   private cleanHTML(html: string): string {
-    if (!html) return '';
-
     return html
-      .replace(/<pre>/g, '\n')
-      .replace(/<\/pre>/g, '\n')
-      .replace(/<code>/g, '')
-      .replace(/<\/code>/g, '')
-      .replace(/<[^>]+>/g, '') // remove all tags
+      .replace(/<[^>]*>/g, '')
       .replace(/&nbsp;/g, ' ')
-      .replace(/&quot;/g, '"')
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
-      .replace(/\n{3,}/g, '\n\n')
+      .replace(/&amp;/g, '&')
       .trim();
   }
 }

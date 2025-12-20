@@ -21,7 +21,6 @@ type AnalysisSections = {
   explanation: string;
   timeComplexity: string;
   spaceComplexity: string;
-  topics: string[];
   betterApproaches: BetterApproach[];
   nextSteps: string;
 };
@@ -33,10 +32,9 @@ export default function Home() {
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('');
 
-  // 🔥 SINGLE SOURCE OF TRUTH
+  // ✅ SINGLE SOURCE OF TRUTH
   const [level, setLevel] = useState<string | null>(null);
 
-  // UI states
   const [analysis, setAnalysis] = useState<AnalysisSections | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('explanation');
 
@@ -78,7 +76,7 @@ public class Main {
 // write your code here`,
   };
 
-  /* 🔹 Sync user */
+  // 🔹 Sync user
   useEffect(() => {
     if (!session?.user?.email || !BACKEND_URL) return;
 
@@ -90,16 +88,13 @@ public class Main {
 
   function normalizeCode(code: string) {
     if (!code) return '';
-    return code
-      .replace(/\\n/g, '\n')
-      .replace(/\t/g, '    ')
-      .trim();
+    return code.replace(/\\n/g, '\n').replace(/\t/g, '    ').trim();
   }
 
-  /* 🔹 ANALYZE */
+  // 🔹 ANALYZE
   async function analyze() {
     if (!session?.user?.email) {
-      setError('Please login first');
+      setError('Please login to continue');
       return;
     }
 
@@ -122,26 +117,20 @@ public class Main {
       const res = await axios.post(`${BACKEND_URL}/analyze`, {
         problem,
         code,
-        level, // ✅ FINAL FIX (DO NOT REMOVE)
         email: session.user.email,
+        leetcodeDifficulty: level, // 🔒 LOCKED
       });
 
-    setAnalysis(res.data.analysis);
-  } catch (err: any) {
-    console.error(err);
-
-    // 🔥 backend auth error handling
-    if (err?.response?.data?.error === 'User not authenticated.') {
-      setError('Please login to continue');
-    } else {
+      setAnalysis(res.data.analysis);
+    } catch (err: any) {
+      console.error(err);
       setError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
     }
-  } finally {
-    setLoading(false);
-  }
   }
 
-  /* 🔹 FETCH FROM LEETCODE */
+  // 🔹 FETCH FROM LEETCODE
   async function fetchFromLeetCode() {
     if (!problem.startsWith('http')) {
       setLeetcodeError('Paste a valid LeetCode problem URL');
@@ -157,13 +146,18 @@ public class Main {
         { params: { input: problem } }
       );
 
-      setProblem(
-        `Title: ${res.data.title}\n\n${res.data.description}`
-      );
+      const formattedProblem = `
+Title: ${res.data.title}
+Difficulty: ${res.data.difficulty}
 
-      // 🔥 SET LEVEL ONCE (FINAL)
+Description:
+${res.data.description}
+`.trim();
+
+      setProblem(formattedProblem);
+
+      // 🔒 LOCK difficulty forever
       setLevel(res.data.difficulty.toLowerCase());
-
       setLeetcodeFetched(true);
     } catch (err) {
       console.error(err);
@@ -197,7 +191,7 @@ public class Main {
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold mb-2">🐆 CheetCode</h1>
         <p className="text-zinc-400 mb-6">
-          AI-powered Leetcode problem analysis
+          AI-powered LeetCode problem analysis
         </p>
 
         {/* Input */}
@@ -286,20 +280,6 @@ public class Main {
           </div>
         )}
 
-        {analysis?.topics?.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {analysis.topics.map((t, i) => (
-              <span
-                key={i}
-                className="px-3 py-1 rounded-full bg-zinc-700 text-xs font-medium"
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-        )}
-        
-
         {/* Analysis */}
         {analysis && (
           <div className="bg-zinc-800 p-6 rounded-xl">
@@ -321,42 +301,30 @@ public class Main {
             </div>
 
             <div className="bg-zinc-900 p-4 rounded text-sm whitespace-pre-wrap">
-              {activeTab === 'explanation' &&
-                (analysis.explanation || 'No explanation provided.')}
-              
+              {activeTab === 'explanation' && analysis.explanation}
+
               {activeTab === 'complexity' && (
                 <>
-                  <p>
-                    <b>Time Complexity:</b>{' '}
-                    {analysis.timeComplexity || 'Not specified'}
-                  </p>
-                  <p>
-                    <b>Space Complexity:</b>{' '}
-                    {analysis.spaceComplexity || 'Not specified'}
-                  </p>
+                  <p><b>Time:</b> {analysis.timeComplexity}</p>
+                  <p><b>Space:</b> {analysis.spaceComplexity}</p>
                 </>
               )}
-              
+
               {activeTab === 'approaches' &&
-                (analysis.betterApproaches.length > 0 ? (
-                  analysis.betterApproaches.map((a, i) => (
-                    <div key={i} className="mb-6">
-                      <p className="font-semibold text-emerald-400">{a.title}</p>
-                      <p>{a.description}</p>
-                      <pre className="bg-black/50 p-3 rounded mt-2 whitespace-pre">
-                        <code>{normalizeCode(a.code)}</code>
-                      </pre>
-                      <p className="text-xs text-zinc-400">
-                        TC: {a.timeComplexity} | SC: {a.spaceComplexity}
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <p>No alternative approaches available.</p>
+                analysis.betterApproaches.map((a, i) => (
+                  <div key={i} className="mb-6">
+                    <p className="font-semibold text-emerald-400">{a.title}</p>
+                    <p>{a.description}</p>
+                    <pre className="bg-black/50 p-3 rounded mt-2">
+                      <code>{normalizeCode(a.code)}</code>
+                    </pre>
+                    <p className="text-xs text-zinc-400">
+                      TC: {a.timeComplexity} | SC: {a.spaceComplexity}
+                    </p>
+                  </div>
                 ))}
-              
-              {activeTab === 'next' &&
-                (analysis.nextSteps || 'No next steps suggested.')}
+
+              {activeTab === 'next' && analysis.nextSteps}
             </div>
           </div>
         )}
