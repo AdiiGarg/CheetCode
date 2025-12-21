@@ -27,21 +27,13 @@ type AnalysisSections = {
 };
 
 export default function Home() {
+  /* ---------------- AUTH ---------------- */
   const { data: session } = useSession();
-  if (!session) {
-  return (
-    <>
-      <LandingHero />
-    </>
-  );
-}
 
-
+  /* ---------------- STATES ---------------- */
   const [problem, setProblem] = useState('');
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('');
-
-  // ✅ SINGLE SOURCE OF TRUTH
   const [level, setLevel] = useState<string | null>(null);
 
   const [analysis, setAnalysis] = useState<AnalysisSections | null>(null);
@@ -55,32 +47,24 @@ export default function Home() {
   const [leetcodeFetched, setLeetcodeFetched] = useState(false);
 
   const defaultCodeMap: Record<string, string> = {
-    cpp: 
-`class Solution {
+    cpp: `class Solution {
 public:
     <datatype> function(){
       // add your code here
     }
 };`,
-
-    python: 
-`class Solution(object):
-    def funciotn():
-        # add your code here
-        `,
-
-    java: 
-`class Solution {
+    python: `class Solution(object):
+    def function(self):
+        # add your code here`,
+    java: `class Solution {
     public <datatype> function() {
         // add your code here
     }
 }`,
-
-    javascript: 
-`// write your code here`,
+    javascript: `// write your code here`,
   };
 
-  // 🔹 Sync user
+  /* ---------------- SYNC USER ---------------- */
   useEffect(() => {
     if (!session?.user?.email || !BACKEND_URL) return;
 
@@ -91,19 +75,16 @@ public:
   }, [session]);
 
   function normalizeCode(code: string) {
-    if (!code) return '';
-    return code.replace(/\\n/g, '\n').replace(/\t/g, '    ').trim();
+    return code
+      .replace(/\\n/g, '\n')
+      .replace(/\t/g, '    ')
+      .trim();
   }
 
-  // 🔹 ANALYZE
+  /* ---------------- ANALYZE ---------------- */
   async function analyze() {
     if (!session?.user?.email) {
       setError('Please login to continue');
-      return;
-    }
-
-    if (!BACKEND_URL) {
-      setError('Backend URL not configured');
       return;
     }
 
@@ -116,25 +97,23 @@ public:
       setLoading(true);
       setError('');
       setAnalysis(null);
-      setActiveTab('explanation');
 
       const res = await axios.post(`${BACKEND_URL}/analyze`, {
         problem,
         code,
         email: session.user.email,
-        leetcodeDifficulty: level, // 🔒 LOCKED
+        leetcodeDifficulty: level,
       });
 
       setAnalysis(res.data.analysis);
-    } catch (err: any) {
-      console.error(err);
+    } catch {
       setError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
   }
 
-  // 🔹 FETCH FROM LEETCODE
+  /* ---------------- FETCH LEETCODE ---------------- */
   async function fetchFromLeetCode() {
     if (!problem.startsWith('http')) {
       setLeetcodeError('Paste a valid LeetCode problem URL');
@@ -150,67 +129,37 @@ public:
         { params: { input: problem } }
       );
 
-      const formattedProblem = `
-Title: ${res.data.title}
-
-Description:
-${res.data.description}
-`.trim();
-
-      setProblem(formattedProblem);
-
-      // 🔒 LOCK difficulty forever
+      setProblem(`Title: ${res.data.title}\n\n${res.data.description}`);
       setLevel(res.data.difficulty.toLowerCase());
       setLeetcodeFetched(true);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setLeetcodeError('Failed to fetch from LeetCode');
     } finally {
       setLeetcodeLoading(false);
     }
   }
 
-  return (
-    <main className="min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Auth */}
-      <div className="flex justify-end mb-4">
-        {!session ? (
-          <button
-            onClick={() => signIn('github')}
-            className="px-4 py-2 bg-zinc-800 rounded"
-          >
-            Login with GitHub
-          </button>
-        ) : (
-          <button
-            onClick={() => signOut()}
-            className="px-4 py-2 bg-zinc-800 rounded"
-          >
-            Logout
-          </button>
-        )}
-      </div>
+  /* ---------------- RENDER ---------------- */
+  if (!session) {
+    return <LandingHero />;
+  }
 
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center gap-0 mb-3 mx-1">
-          <img
-            src="/logo.png"
-            alt="CheetCode Logo"
-            className="w-13 h-12"
-          />
-          <h1 className="text-4xl font-semibold tracking-tight text-white">
-          CheetCode
-          </h1>
+  return (
+    <main className="min-h-screen flex justify-center px-6">
+      <div className="max-w-4xl w-full mt-10">
+        <div className="flex items-center gap-2 mb-3">
+          <img src="/logo.png" className="w-12 h-12" />
+          <h1 className="text-4xl font-semibold">CheetCode</h1>
         </div>
 
-        <p className="text-zinc-200 mb-4 px-4 text-lg">
+        <p className="text-zinc-400 mb-6">
           AI-powered LeetCode problem analysis
         </p>
 
-        {/* Input */}
-        <div className="bg-zinc-800 p-6 rounded-xl space-y-4 mb-6">
+        {/* INPUT */}
+        <div className="bg-zinc-800 p-6 rounded-xl space-y-4">
           <select
-            className="w-full bg-zinc-900 border border-zinc-700 p-2 rounded"
+            className="w-full bg-zinc-900 border p-2 rounded"
             value={language}
             onChange={(e) => {
               const lang = e.target.value;
@@ -227,7 +176,7 @@ ${res.data.description}
 
           <textarea
             disabled={leetcodeFetched}
-            className="w-full bg-zinc-900 border border-zinc-700 p-3 rounded"
+            className="w-full bg-zinc-900 border p-3 rounded"
             rows={4}
             placeholder="Paste LeetCode problem URL"
             value={problem}
@@ -236,111 +185,28 @@ ${res.data.description}
 
           <button
             onClick={fetchFromLeetCode}
-            disabled={leetcodeLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 transition p-2 rounded font-medium"
+            className="w-full bg-blue-600 p-2 rounded"
           >
-            {leetcodeLoading ? 'Fetching...' : 'Fetch problem statement'}
+            {leetcodeLoading ? 'Fetching...' : 'Fetch problem'}
           </button>
 
-          {leetcodeError && (
-            <p className="text-red-400 text-sm">{leetcodeError}</p>
-          )}
-
           {language && (
-            <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-4">
-              <Editor
-                height="300px"
-                language={language === 'cpp' ? 'cpp' : language}
-                theme="vs-dark"
-                value={code}
-                onChange={(v) => setCode(v || '')}
-                options={{
-                  tabSize: 4,
-                  insertSpaces: true,
-                  detectIndentation: false,
-                  fontSize: 14,
-                  minimap: { enabled: false },
-                  wordWrap: 'on',
-                }}
-              />
-            </div>
+            <Editor
+              height="300px"
+              language={language}
+              theme="vs-dark"
+              value={code}
+              onChange={(v) => setCode(v || '')}
+            />
           )}
 
           <button
             onClick={analyze}
-            disabled={loading || !session}
-            className={`w-full transition p-3 rounded font-semibold ${
-              !session
-                ? 'bg-zinc-700 cursor-not-allowed'
-                : 'bg-emerald-600 hover:bg-emerald-700'
-            }`}
+            className="w-full bg-emerald-600 p-3 rounded font-semibold"
           >
-            {!session
-              ? 'Login to Analyze'
-              : loading
-              ? 'Analyzing...'
-              : 'Analyze'}
+            {loading ? 'Analyzing...' : 'Analyze'}
           </button>
         </div>
-
-        {/* Difficulty */}
-        {level && (
-          <div className="mb-4 inline-block px-4 py-1 rounded bg-zinc-800 border border-zinc-700">
-            Detected Difficulty:{' '}
-            <span className="font-semibold uppercase text-emerald-400">
-              {level}
-            </span>
-          </div>
-        )}
-
-        {/* Analysis */}
-        {analysis && (
-          <div className="bg-zinc-800 p-6 rounded-xl">
-            <div className="flex gap-2 mb-4">
-              {(['explanation', 'complexity', 'approaches', 'next'] as TabType[])
-                .map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-3 py-1 rounded text-sm ${
-                      activeTab === tab
-                        ? 'bg-emerald-600'
-                        : 'bg-zinc-700'
-                    }`}
-                  >
-                    {tab.toUpperCase()}
-                  </button>
-                ))}
-            </div>
-
-            <div className="bg-zinc-900 p-4 rounded text-sm whitespace-pre-wrap">
-              {activeTab === 'explanation' && analysis.explanation}
-
-              {activeTab === 'complexity' && (
-                <>
-                  <p><b>Time:</b> {analysis.timeComplexity}</p>
-                  <p><b>Space:</b> {analysis.spaceComplexity}</p>
-                </>
-              )}
-
-              {activeTab === 'approaches' &&
-                analysis.betterApproaches.map((a, i) => (
-                  <div key={i} className="mb-6">
-                    <p className="font-semibold text-emerald-400">{a.title}</p>
-                    <p>{a.description}</p>
-                    <pre className="bg-black/50 p-3 rounded mt-2">
-                      <code>{normalizeCode(a.code)}</code>
-                    </pre>
-                    <p className="text-xs text-zinc-400">
-                      TC: {a.timeComplexity} | SC: {a.spaceComplexity}
-                    </p>
-                  </div>
-                ))}
-
-              {activeTab === 'next' && analysis.nextSteps}
-            </div>
-          </div>
-        )}
       </div>
     </main>
   );
