@@ -7,7 +7,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  ResponsiveContainer,
   BarChart,
   Bar,
   XAxis,
@@ -36,22 +35,18 @@ export default function DashboardPage() {
     const email = session.user.email;
     setLoading(true);
 
-    // 📊 Stats
     axios
       .get(`${BACKEND_URL}/analyze/stats`, { params: { email } })
       .then((res) => setStats(res.data))
       .catch((err) => console.error('Stats error:', err))
       .finally(() => setLoading(false));
 
-    // 🤖 AI Recommendations
     axios
       .get(`${BACKEND_URL}/analyze/recommendations`, {
         params: { email },
       })
       .then((res) => setRecommendations(res.data))
-      .catch((err) =>
-        console.warn('Recommendations unavailable:', err?.message)
-      );
+      .catch(() => setRecommendations(null));
   }, [session, status]);
 
   const pieData = [
@@ -78,59 +73,73 @@ export default function DashboardPage() {
           <p className="text-zinc-400">Loading stats...</p>
         )}
 
-        {/* STATS CARDS */}
+        {/* STAT CARDS */}
+        {status === 'authenticated' && !loading && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            <StatCard title="Total Solved" value={stats.total} />
+            <StatCard title="Beginner" value={stats.easy} />
+            <StatCard title="Intermediate" value={stats.medium} />
+            <StatCard title="Advanced" value={stats.hard} />
+          </div>
+        )}
+
+        {/* CHARTS */}
         {status === 'authenticated' && !loading && stats.total > 0 && (
-            <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             
-              {/* Difficulty Breakdown */}
-              <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
-                <h2 className="text-lg font-semibold mb-4">
-                  Difficulty Breakdown
-                </h2>
-                    
-                <ResponsiveContainer width="100%" height={260}>
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: 'Easy', value: stats.easy },
-                        { name: 'Medium', value: stats.medium },
-                        { name: 'Hard', value: stats.hard },
-                      ]}
-                      dataKey="value"
-                      innerRadius={50}
-                      outerRadius={80}
-                      paddingAngle={5}
-                    >
-                      {['#34d399', '#60a5fa', '#f87171'].map((color, i) => (
-                        <Cell key={i} fill={color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+            {/* PIE CHART */}
+            <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
+              <h2 className="text-lg font-semibold mb-4">
+                Difficulty Breakdown
+              </h2>
+
+              <div className="flex justify-center">
+                <PieChart width={300} height={300}>
+                  <Pie
+                    data={pieData}
+                    dataKey="value"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={5}
+                  >
+                    {['#34d399', '#60a5fa', '#f87171'].map((color, i) => (
+                      <Cell key={i} fill={color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
               </div>
+            </div>
 
-    {/* Problems Solved */}
-    <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
-      <h2 className="text-lg font-semibold mb-4">
-        Problems Solved
-      </h2>
+            {/* BAR CHART */}
+            <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
+              <h2 className="text-lg font-semibold mb-4">
+                Problems Solved
+              </h2>
 
-      <ResponsiveContainer width="100%" height={260}>
-        <BarChart data={[{ name: 'Solved', value: stats.total }]}>
-          <XAxis dataKey="name" />
-          <Tooltip />
-          <Bar dataKey="value" fill="#34d399" />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  </div>
-)}
+              <BarChart width={300} height={300} data={[
+                { name: 'Solved', value: stats.total }
+              ]}>
+                <XAxis dataKey="name" />
+                <Tooltip />
+                <Bar dataKey="value" fill="#34d399" />
+              </BarChart>
+            </div>
+          </div>
+        )}
 
+        {/* EMPTY STATE */}
+        {status === 'authenticated' && !loading && stats.total === 0 && (
+          <p className="text-zinc-400 mt-10 text-center">
+            No submissions yet. Analyze a problem to see stats 📊
+          </p>
+        )}
 
         {/* AI RECOMMENDATIONS */}
         {status === 'authenticated' && recommendations && (
-          <div className="mt-8 bg-zinc-800 border border-zinc-700 rounded-xl p-6">
+          <div className="mt-10 bg-zinc-800 border border-zinc-700 rounded-xl p-6">
             <h2 className="text-xl font-semibold mb-3">
               AI Recommendations
             </h2>
