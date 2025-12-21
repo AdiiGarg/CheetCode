@@ -23,7 +23,7 @@ export default function DashboardPage() {
     hard: 0,
   });
 
-  const [recommendations, setRecommendations] = useState<string | null>(null);
+  const [recommendations, setRecommendations] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -39,13 +39,24 @@ export default function DashboardPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
 
-    // 🤖 Recommendations
+    // 🤖 Recommendations (SAFE PARSE)
     axios
       .get(`${BACKEND_URL}/analyze/recommendations`, {
         params: { email },
       })
-      .then((res) => setRecommendations(res.data.result))
-      .catch(() => console.warn('Recommendations unavailable'));
+      .then((res) => {
+        const data = res.data;
+
+        // 🔒 HARD SAFETY
+        if (typeof data === 'string') {
+          setRecommendations(data);
+        } else if (typeof data?.result === 'string') {
+          setRecommendations(data.result);
+        } else {
+          setRecommendations('');
+        }
+      })
+      .catch(() => setRecommendations(''));
   }, [session, status]);
 
   return (
