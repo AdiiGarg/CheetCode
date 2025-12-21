@@ -46,33 +46,30 @@ export default function Home() {
   const [leetcodeFetched, setLeetcodeFetched] = useState(false);
 
   const defaultCodeMap: Record<string, string> = {
-    cpp: `#include <bits/stdc++.h>
-using namespace std;
+    cpp: `
+class Solution {
+public:
+    void function(){
+      // add your code here
+    }
+};`,
 
-int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(NULL);
+    python: `
+class Solution(object):
+    def funciotn():
+        # add your code here
+        `,
 
-    // write your code here
-
-    return 0;
-}`,
-    python: `def solve():
-    # write your code here
-    pass
-
-if __name__ == "__main__":
-    solve()`,
-    java: `import java.io.*;
-import java.util.*;
-
-public class Main {
-    public static void main(String[] args) {
-        // write your code here
+    java: 
+`
+class Solution {
+    public <datatype> function() {
+        // add your code here
     }
 }`,
-    javascript: `"use strict";
 
+    javascript: 
+`
 // write your code here`,
   };
 
