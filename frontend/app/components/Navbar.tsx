@@ -1,75 +1,53 @@
 'use client';
 
-import Link from "next/link";
-import { useSession, signIn, signOut } from "next-auth/react";
+import Link from 'next/link';
+import Image from 'next/image';
+import { useSession, signOut } from 'next-auth/react';
 
 export default function Navbar() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
 
   return (
-    <nav className="bg-zinc-900 border-b border-zinc-800 px-6 py-4">
-      <div className="max-w-6xl mx-auto flex justify-between items-center">
+    <nav className="w-full bg-zinc-900 border-b border-zinc-800">
+      <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
         
-        {/* Logo */}
-        <Link href="/">
-        <img
-          src="/logo.png"
-          alt="CheetCode Logo"
-          className="h-8 w-8"
-        />
-        <span className="text-xl font-bold">CheetCode</span>
+        {/* 🔥 LOGO + NAME */}
+        <Link href="/" className="flex items-center gap-3">
+          <Image
+            src="/logo.png"      // 🔥 your logo
+            alt="CheetCode Logo"
+            width={36}            // 🔥 NOT small
+            height={36}
+            priority
+          />
+          <span className="text-xl font-semibold tracking-wide text-white">
+            CheetCode
+          </span>
         </Link>
 
-        {/* Right Side */}
-        <div className="flex items-center gap-4">
-          {/* Loading */}
-          {status === "loading" && (
-            <span className="text-zinc-400 text-sm">Loading...</span>
-          )}
+        {/* 🔹 RIGHT SIDE */}
+        <div className="flex items-center gap-6">
+          <Link
+            href="/dashboard"
+            className="text-zinc-300 hover:text-white text-sm"
+          >
+            Dashboard
+          </Link>
 
-          {/* Logged out */}
-          {status === "unauthenticated" && (
+          <Link
+            href="/my-submissions"
+            className="text-zinc-300 hover:text-white text-sm"
+          >
+            My Submissions
+          </Link>
+
+          {session && (
             <button
-              onClick={() => signIn("github")}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded text-sm font-semibold"
+              onClick={() => signOut()}
+              className="px-4 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded text-sm"
             >
-              Login with GitHub
+              Logout
             </button>
-          )}
-
-          {/* Logged in */}
-          {status === "authenticated" && session?.user && (
-            <>
-              <Link
-                href="/dashboard"
-                className="text-zinc-300 hover:text-white text-sm"
-              >
-                Dashboard
-              </Link>
-
-              <Link
-                href="/my-submissions"
-                className="text-zinc-300 hover:text-white text-sm"
-              >
-                My Submissions
-              </Link>
-
-              {/* GitHub Avatar */}
-              {session.user.image && (
-                <img
-                  src={session.user.image}
-                  alt="avatar"
-                  className="w-8 h-8 rounded-full border border-zinc-700"
-                />
-              )}
-
-              <button
-                onClick={() => signOut()}
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded text-sm"
-              >
-                Logout
-              </button>
-            </>
           )}
         </div>
       </div>
