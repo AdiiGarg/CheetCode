@@ -71,10 +71,10 @@ export default function DashboardPage() {
 
         {status === 'authenticated' && !loading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard title="Total Solved" value={stats.total} />
-            <StatCard title="Beginner" value={stats.easy} />
-            <StatCard title="Intermediate" value={stats.medium} />
-            <StatCard title="Advanced" value={stats.hard} />
+            <StatCard title="Total Submissions" value={stats.total} />
+            <StatCard title="Easy" value={stats.easy} />
+            <StatCard title="Medium" value={stats.medium} />
+            <StatCard title="Hard" value={stats.hard} />
           </div>
         )}
 
