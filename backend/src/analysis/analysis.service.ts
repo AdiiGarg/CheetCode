@@ -54,28 +54,35 @@ export class AnalysisService {
           ? data.leetcodeDifficulty
           : 'medium';
 
-      // 🧠 STRICT STRUCTURED PROMPT
-      const prompt = `
+      // 🧠 STRICT STRUCTURED PROMPT (FINAL)
+const prompt = `
 You are a competitive programming mentor.
 
 Difficulty: ${finalLevel}
 
 You MUST return VALID JSON ONLY.
 NO markdown.
-NO extra text.
+NO explanations outside JSON.
 NO merging of sections.
 
-STRICT RULES:
-- explanation: conceptual explanation ONLY
-- timeComplexity: Big-O ONLY (example: O(n log n))
-- spaceComplexity: Big-O ONLY
-- betterApproaches: ARRAY (can be empty)
-- nextSteps: learning advice ONLY
-- If unsure, return EMPTY STRING "" but KEEP the key
-- Time complexity and space complexity should be of the submitted code in complexity section.
-- for better approaches Time complexity and space complexity should be of only that code.
+CRITICAL RULES (DO NOT VIOLATE):
+1. timeComplexity and spaceComplexity MUST be calculated ONLY from the USER SUBMITTED CODE.
+2. DO NOT give optimal / theoretical / problem-level complexity.
+3. Analyze EXACTLY what the submitted code does.
+4. If the submitted code is incomplete or trivial, give complexity based on what IS written.
+5. For betterApproaches:
+   - timeComplexity and spaceComplexity MUST be of THAT approach's code only.
 
-JSON FORMAT (EXACT):
+SECTION RULES:
+- explanation → conceptual explanation of USER CODE ONLY
+- timeComplexity → Big-O of USER CODE ONLY
+- spaceComplexity → Big-O of USER CODE ONLY
+- betterApproaches → alternative approaches (can be empty)
+- nextSteps → learning advice ONLY
+
+If unsure, return EMPTY STRING "" but KEEP the key.
+
+JSON FORMAT (EXACT, ALL KEYS REQUIRED):
 {
   "explanation": "",
   "timeComplexity": "",
