@@ -21,6 +21,7 @@
 
 import './globals.css';
 import { Inter } from 'next/font/google';
+import Navbar from "./components/Navbar";
 import Providers from './providers';
 
 const inter = Inter({
@@ -45,6 +46,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Providers>
+           <Navbar />
           {children}
         </Providers>
       </body>
