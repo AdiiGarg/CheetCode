@@ -69,7 +69,7 @@ CRITICAL RULES (DO NOT VIOLATE):
 1. timeComplexity and spaceComplexity MUST be calculated ONLY from the USER SUBMITTED CODE.
 2. DO NOT give optimal / theoretical / problem-level complexity.
 3. Analyze EXACTLY what the submitted code does.
-4. If the submitted code is incomplete or trivial, give complexity based on what IS written.
+4. If the submitted code is incomplete or trivial, give complexity as null or NA.
 5. For betterApproaches:
    - timeComplexity and spaceComplexity MUST be of THAT approach's code only.
 
