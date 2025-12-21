@@ -9,18 +9,18 @@ export default function Navbar() {
 
   return (
     <nav className="w-full bg-zinc-900 border-b border-zinc-800">
-      <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
         
         {/* 🔥 LOGO + NAME */}
-        <Link href="/" className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-0">
           <Image
             src="/logo.png"      // 🔥 your logo
             alt="CheetCode Logo"
-            width={36}            // 🔥 NOT small
+            width={70}            // 🔥 NOT small
             height={36}
             priority
           />
-          <span className="text-xl font-semibold tracking-wide text-white">
+          <span className="text-2xl font-semibold tracking-wide text-white">
             CheetCode
           </span>
         </Link>
