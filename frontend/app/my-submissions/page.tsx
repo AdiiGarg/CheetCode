@@ -6,33 +6,23 @@ import axios from 'axios';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-/* ---------------- TYPES ---------------- */
-
 type Submission = {
   _id: string;
   createdAt: string;
   level: 'easy' | 'medium' | 'hard';
-  title: string;
+  title?: string;
+  problem?: string;
+  analysis?: {
+    explanation?: string;
+    betterApproaches?: { title: string }[];
+    nextSteps?: string;
+  };
 };
-
-/* ---------------- TIME HELPER ---------------- */
-
-function timeAgo(date: string) {
-  const diff = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-
-  if (diff < 60) return `${diff}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-}
-
-/* ---------------- PAGE ---------------- */
 
 export default function MySubmissionsPage() {
   const { data: session, status } = useSession();
 
   const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [openId, setOpenId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   /* UI */
@@ -40,6 +30,7 @@ export default function MySubmissionsPage() {
   const [difficulty, setDifficulty] =
     useState<'all' | 'easy' | 'medium' | 'hard'>('all');
   const [sort, setSort] = useState<'latest' | 'oldest'>('latest');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   /* FETCH */
   useEffect(() => {
@@ -55,7 +46,7 @@ export default function MySubmissionsPage() {
       .finally(() => setLoading(false));
   }, [session, status]);
 
-  /* FILTER + SEARCH + SORT */
+  /* FILTER + SEARCH + SORT (SAFE) */
   const filtered = useMemo(() => {
     let list = [...submissions];
 
@@ -65,14 +56,14 @@ export default function MySubmissionsPage() {
 
     if (search.trim()) {
       list = list.filter(s =>
-        s.title.toLowerCase().includes(search.toLowerCase())
+        (getTitle(s) || '').toLowerCase().includes(search.toLowerCase())
       );
     }
 
     list.sort((a, b) =>
       sort === 'latest'
-        ? +new Date(b.createdAt) - +new Date(a.createdAt)
-        : +new Date(a.createdAt) - +new Date(b.createdAt)
+        ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
 
     return list;
@@ -84,9 +75,9 @@ export default function MySubmissionsPage() {
 
         {/* HEADER */}
         <header>
-          <h1 className="text-4xl font-bold">My Submissions</h1>
+          <h1 className="text-4xl font-bold tracking-tight">My Submissions</h1>
           <p className="text-zinc-400 mt-2">
-            Revisit, improve and re-analyze your problems
+            Revisit, expand and re-analyze your problems
           </p>
         </header>
 
@@ -99,7 +90,7 @@ export default function MySubmissionsPage() {
             className="bg-zinc-900/70 border border-zinc-800 rounded-lg px-4 py-2 text-sm w-full md:w-80"
           />
 
-          <div className="flex gap-2 flex-wrap items-center">
+          <div className="flex gap-2 flex-wrap">
             {['all', 'easy', 'medium', 'hard'].map(d => (
               <button
                 key={d}
@@ -126,7 +117,6 @@ export default function MySubmissionsPage() {
           </div>
         </div>
 
-        {/* STATES */}
         {loading && <p className="text-zinc-400">Loading submissions...</p>}
 
         {!loading && filtered.length === 0 && (
@@ -141,9 +131,9 @@ export default function MySubmissionsPage() {
             <SubmissionCard
               key={sub._id}
               sub={sub}
-              open={openId === sub._id}
+              expanded={expandedId === sub._id}
               onToggle={() =>
-                setOpenId(openId === sub._id ? null : sub._id)
+                setExpandedId(expandedId === sub._id ? null : sub._id)
               }
             />
           ))}
@@ -157,64 +147,79 @@ export default function MySubmissionsPage() {
 
 function SubmissionCard({
   sub,
-  open,
+  expanded,
   onToggle,
 }: {
   sub: Submission;
-  open: boolean;
+  expanded: boolean;
   onToggle: () => void;
 }) {
-  const color = {
+  const levelColor = {
     easy: 'text-emerald-400',
     medium: 'text-blue-400',
     hard: 'text-rose-400',
   };
 
   return (
-    <div
-      onClick={onToggle}
-      className="
-        bg-zinc-900/70 backdrop-blur-xl
-        border border-zinc-800 rounded-2xl p-6
-        transition cursor-pointer
-        hover:border-emerald-500/40
-      "
-    >
-      {/* TOP */}
-      <div className="flex justify-between items-center">
-        <div>
-          <p className="text-xs text-zinc-400">
-            {timeAgo(sub.createdAt)}
-          </p>
-          <h3 className="text-lg font-semibold mt-1">
-            {sub.title}
-          </h3>
+    <div className="bg-zinc-900/70 backdrop-blur-xl border border-zinc-800 rounded-2xl p-6 transition">
+      <div
+        className="cursor-pointer"
+        onClick={onToggle}
+      >
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-xs text-zinc-400">
+            {new Date(sub.createdAt).toLocaleString()}
+          </span>
+          <span
+            className={`text-xs font-semibold uppercase ${levelColor[sub.level]}`}
+          >
+            {sub.level}
+          </span>
         </div>
 
-        <span className={`text-xs font-semibold uppercase ${color[sub.level]}`}>
-          {sub.level}
-        </span>
+        <h3 className="text-lg font-semibold">
+          {getTitle(sub)}
+        </h3>
       </div>
 
       {/* EXPANDED */}
-      {open && (
-        <div className="mt-4 pt-4 border-t border-zinc-800 space-y-3 text-sm text-zinc-300">
-          <p className="text-emerald-400 font-medium">
-            💡 Tip
+      {expanded && (
+        <div className="mt-4 border-t border-zinc-800 pt-4 space-y-4">
+          <p className="text-sm text-zinc-300 leading-relaxed">
+            {cleanText(sub.problem || '')}
           </p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Think in terms of optimal time & space complexity</li>
-            <li>Handle edge cases before coding</li>
-            <li>Prefer clean two-pointer or hash based approaches</li>
-            <li>Re-solve without looking at hints</li>
-          </ul>
+
+          {sub.analysis?.betterApproaches && (
+            <div>
+              <p className="text-sm font-semibold text-emerald-400 mb-2">
+                Key Takeaways
+              </p>
+              <ul className="list-disc list-inside text-sm text-zinc-300 space-y-1">
+                {sub.analysis.betterApproaches
+                  .slice(0, 4)
+                  .map((a, i) => (
+                    <li key={i}>{a.title}</li>
+                  ))}
+              </ul>
+            </div>
+          )}
+
+          {sub.analysis?.nextSteps && (
+            <div>
+              <p className="text-sm font-semibold text-emerald-400 mb-1">
+                Tips
+              </p>
+              <p className="text-sm text-zinc-300">
+                {sub.analysis.nextSteps}
+              </p>
+            </div>
+          )}
 
           <button
-            onClick={e => {
-              e.stopPropagation();
-              alert('Re-analyze coming next 🔥');
+            onClick={() => {
+              window.location.href = '/';
             }}
-            className="mt-3 px-4 py-2 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="mt-2 px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 transition"
           >
             Re-Analyze
           </button>
@@ -222,4 +227,22 @@ function SubmissionCard({
       )}
     </div>
   );
+}
+
+/* ---------------- UTIL ---------------- */
+
+function getTitle(sub: Submission) {
+  if (sub.title) return sub.title;
+  if (sub.problem?.startsWith('Title:')) {
+    return sub.problem.split('\n')[0].replace('Title:', '').trim();
+  }
+  return 'Untitled Problem';
+}
+
+function cleanText(text: string) {
+  return text
+    .replace(/<[^>]*>?/gm, '')
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .slice(0, 400);
 }
