@@ -6,18 +6,24 @@ import axios from 'axios';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
+/* ---------------- TYPES ---------------- */
+
+type Analysis = {
+  explanation?: string;
+  betterApproaches?: { title: string }[];
+  nextSteps?: string;
+};
+
 type Submission = {
   _id: string;
   createdAt: string;
   level: 'easy' | 'medium' | 'hard';
-  title?: string;
-  problem?: string;
-  analysis?: {
-    explanation?: string;
-    betterApproaches?: { title: string }[];
-    nextSteps?: string;
-  };
+  title?: string | null;
+  problem?: string | null;
+  analysis?: string | Analysis | null; // 🔴 string from DB
 };
+
+/* ---------------- PAGE ---------------- */
 
 export default function MySubmissionsPage() {
   const { data: session, status } = useSession();
@@ -25,7 +31,6 @@ export default function MySubmissionsPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(false);
 
-  /* UI */
   const [search, setSearch] = useState('');
   const [difficulty, setDifficulty] =
     useState<'all' | 'easy' | 'medium' | 'hard'>('all');
@@ -34,7 +39,8 @@ export default function MySubmissionsPage() {
   // ✅ only one expanded at a time
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  /* FETCH */
+  /* ---------------- FETCH ---------------- */
+
   useEffect(() => {
     if (status !== 'authenticated' || !session?.user?.email) return;
 
@@ -48,7 +54,8 @@ export default function MySubmissionsPage() {
       .finally(() => setLoading(false));
   }, [session, status]);
 
-  /* FILTER + SEARCH + SORT (SAFE) */
+  /* ---------------- FILTER / SEARCH / SORT ---------------- */
+
   const filtered = useMemo(() => {
     let list = [...submissions];
 
@@ -57,10 +64,9 @@ export default function MySubmissionsPage() {
     }
 
     if (search.trim()) {
+      const q = search.toLowerCase();
       list = list.filter(s =>
-        (getTitle(s) || '')
-          .toLowerCase()
-          .includes(search.toLowerCase())
+        getTitle(s).toLowerCase().includes(q)
       );
     }
 
@@ -174,14 +180,16 @@ function SubmissionCard({
     hard: 'text-rose-400',
   };
 
+  const analysis: Analysis | null =
+    typeof sub.analysis === 'string'
+      ? safeParse(sub.analysis)
+      : sub.analysis ?? null;
+
   return (
     <div className="bg-zinc-900/70 backdrop-blur-xl border border-zinc-800 rounded-2xl p-6 transition">
 
       {/* HEADER (CLICK ONLY HERE) */}
-      <button
-        onClick={onToggle}
-        className="w-full text-left"
-      >
+      <button onClick={onToggle} className="w-full text-left">
         <div className="flex justify-between items-center mb-2">
           <span className="text-xs text-zinc-400">
             {new Date(sub.createdAt).toLocaleString()}
@@ -198,46 +206,41 @@ function SubmissionCard({
         </h3>
       </button>
 
-      {/* EXPANDED VIEW */}
-      {expanded && (
+      {/* EXPANDED */}
+      {expanded && analysis && (
         <div className="mt-5 border-t border-zinc-800 pt-4 space-y-5">
 
-          {/* Explanation */}
-          {sub.analysis?.explanation && (
+          {analysis.explanation && (
             <div>
               <p className="text-sm font-semibold text-emerald-400 mb-1">
                 Explanation
               </p>
               <p className="text-sm text-zinc-300 leading-relaxed">
-                {sub.analysis.explanation}
+                {analysis.explanation}
               </p>
             </div>
           )}
 
-          {/* Key Points */}
-          {sub.analysis?.betterApproaches?.length ? (
+          {analysis.betterApproaches?.length ? (
             <div>
               <p className="text-sm font-semibold text-emerald-400 mb-2">
                 Key Takeaways
               </p>
               <ul className="list-disc list-inside text-sm text-zinc-300 space-y-1">
-                {sub.analysis.betterApproaches
-                  .slice(0, 4)
-                  .map((a, i) => (
-                    <li key={i}>{a.title}</li>
-                  ))}
+                {analysis.betterApproaches.slice(0, 4).map((a, i) => (
+                  <li key={i}>{a.title}</li>
+                ))}
               </ul>
             </div>
           ) : null}
 
-          {/* Tips */}
-          {sub.analysis?.nextSteps && (
+          {analysis.nextSteps && (
             <div>
               <p className="text-sm font-semibold text-emerald-400 mb-1">
                 Tips
               </p>
               <p className="text-sm text-zinc-300">
-                {sub.analysis.nextSteps}
+                {analysis.nextSteps}
               </p>
             </div>
           )}
@@ -247,15 +250,22 @@ function SubmissionCard({
   );
 }
 
-/* ---------------- UTIL ---------------- */
+/* ---------------- UTILS ---------------- */
 
-function getTitle(sub: Submission) {
-  if (sub.title) return sub.title;
-  if (sub.problem?.startsWith('Title:')) {
-    return sub.problem
-      .split('\n')[0]
-      .replace('Title:', '')
-      .trim();
+function safeParse(value: string): Analysis | null {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
   }
+}
+
+function getTitle(sub: Submission): string {
+  if (sub.title && sub.title.trim()) return sub.title;
+
+  if (sub.problem?.startsWith('Title:')) {
+    return sub.problem.split('\n')[0].replace('Title:', '').trim();
+  }
+
   return 'Untitled Problem';
 }
