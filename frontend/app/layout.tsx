@@ -44,7 +44,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} min-h-screen overflow-hidden bg-zinc-950`}>
+      <body className={`${inter.className} min-h-screen overflow-x-hidden bg-zinc-950`}>
         <div>
         <Providers>
            <Navbar />

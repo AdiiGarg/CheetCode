@@ -150,7 +150,7 @@ public:
         {/* HEADER */}
         <div className="text-center mb-10">
           <div className="flex justify-center items-center gap-3 mb-3">
-            <img src="/logo.png" className="w-12 h-12" />
+            <img src="/logo.png" className="w-15 h-12" />
             <h1 className="text-4xl font-semibold text-white">
               CheetCode
             </h1>
@@ -173,7 +173,7 @@ public:
           "
         >
           <select
-            className="w-full bg-zinc-900 border border-zinc-700 p-2 rounded"
+            className="w-full bg-zinc-900 border border-zinc-700 p-2 rounded text-white"
             value={language}
             onChange={(e) => {
               const lang = e.target.value;
@@ -190,7 +190,7 @@ public:
 
           <textarea
             disabled={leetcodeFetched}
-            className="w-full bg-zinc-900 border border-zinc-700 p-3 rounded"
+            className="w-full bg-zinc-900 border border-zinc-700 p-3 rounded text-white"
             rows={4}
             placeholder="Paste LeetCode problem URL"
             value={problem}
