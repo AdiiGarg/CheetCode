@@ -121,7 +121,7 @@ export default function MySubmissionsPage() {
             <select
               value={sort}
               onChange={e => setSort(e.target.value as any)}
-              className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1 text-xs"
+              className="bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-1 text-xs"
             >
               <option value="latest">Latest</option>
               <option value="oldest">Oldest</option>
@@ -183,7 +183,7 @@ function SubmissionCard({
           <span className="text-xs text-zinc-400">
             {new Date(sub.createdAt).toLocaleString()}
           </span>
-          <span className={`text-xs font-semibold ${levelColor[sub.level]}`}>
+          <span className={`text-xs font-semibold uppercase ${levelColor[sub.level]}`}>
             {sub.level}
           </span>
         </div>
