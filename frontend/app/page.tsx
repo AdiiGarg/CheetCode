@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import Editor from '@monaco-editor/react';
 import LandingHero from './components/LandingHero';
 
@@ -49,8 +49,8 @@ export default function Home() {
   const defaultCodeMap: Record<string, string> = {
     cpp: `class Solution {
 public:
-    <datatype> function(){
-      // add your code here
+    <datatype> function() {
+        // add your code here
     }
 };`,
     python: `class Solution(object):
@@ -75,10 +75,7 @@ public:
   }, [session]);
 
   function normalizeCode(code: string) {
-    return code
-      .replace(/\\n/g, '\n')
-      .replace(/\t/g, '    ')
-      .trim();
+    return code.replace(/\\n/g, '\n').replace(/\t/g, '    ').trim();
   }
 
   /* ---------------- ANALYZE ---------------- */
@@ -97,6 +94,7 @@ public:
       setLoading(true);
       setError('');
       setAnalysis(null);
+      setActiveTab('explanation');
 
       const res = await axios.post(`${BACKEND_URL}/analyze`, {
         problem,
@@ -139,36 +137,43 @@ public:
     }
   }
 
-  /* ---------------- RENDER ---------------- */
+  /* ---------------- LANDING ---------------- */
   if (!session) {
     return <LandingHero />;
   }
 
+  /* ---------------- PAGE ---------------- */
   return (
-    <main className="min-h-screen px-6 pt-28 pb-20 overflow-y-auto">
-      <div className="max-w-4xl w-full mt-10">
-        <div className="flex items-center gap-2 mb-3">
-          <img src="/logo.png" className="w-12 h-12" />
-          <h1 className="text-4xl font-semibold">CheetCode</h1>
+    <main className="min-h-screen px-6 pt-32 pb-24 overflow-y-auto">
+      <div className="max-w-4xl mx-auto w-full">
+
+        {/* HEADER */}
+        <div className="text-center mb-10">
+          <div className="flex justify-center items-center gap-3 mb-3">
+            <img src="/logo.png" className="w-12 h-12" />
+            <h1 className="text-4xl font-semibold text-white">
+              CheetCode
+            </h1>
+          </div>
+          <p className="text-zinc-400 text-lg">
+            AI-powered LeetCode problem analysis
+          </p>
         </div>
 
-        <p className="text-zinc-400 mb-6">
-          AI-powered LeetCode problem analysis
-        </p>
-
-        {/* INPUT */}
-        <div className="
-          bg-zinc-900/70
-          backdrop-blur-xl
-          p-6
-          rounded-2xl
-          space-y-4
-          border
-          border-zinc-800
-          shadow-[0_0_40px_rgba(0,0,0,0.6)]
-        ">
+        {/* INPUT CARD */}
+        <div
+          className="
+            bg-zinc-900/70
+            backdrop-blur-xl
+            p-6
+            rounded-2xl
+            space-y-4
+            border border-zinc-800
+            shadow-[0_0_40px_rgba(0,0,0,0.6)]
+          "
+        >
           <select
-            className="w-full bg-zinc-900 border p-2 rounded"
+            className="w-full bg-zinc-900 border border-zinc-700 p-2 rounded"
             value={language}
             onChange={(e) => {
               const lang = e.target.value;
@@ -185,7 +190,7 @@ public:
 
           <textarea
             disabled={leetcodeFetched}
-            className="w-full bg-zinc-900 border p-3 rounded"
+            className="w-full bg-zinc-900 border border-zinc-700 p-3 rounded"
             rows={4}
             placeholder="Paste LeetCode problem URL"
             value={problem}
@@ -194,30 +199,46 @@ public:
 
           <button
             onClick={fetchFromLeetCode}
-            className="w-full bg-blue-600 p-2 rounded"
+            disabled={leetcodeLoading}
+            className="w-full bg-blue-600 hover:bg-blue-700 transition p-2 rounded font-medium"
           >
             {leetcodeLoading ? 'Fetching...' : 'Fetch problem'}
           </button>
 
+          {leetcodeError && (
+            <p className="text-red-400 text-sm">{leetcodeError}</p>
+          )}
+
           {language && (
-          <div className="mt-4 rounded-xl overflow-hidden border border-zinc-800">
-            <Editor
-              height="300px"
-              language={language}
-              theme="vs-dark"
-              value={code}
-              onChange={(v) => setCode(v || '')}
-            />
-          </div>
+            <div className="mt-4 rounded-xl overflow-hidden border border-zinc-800">
+              <Editor
+                height="320px"
+                language={language}
+                theme="vs-dark"
+                value={code}
+                onChange={(v) => setCode(v || '')}
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 14,
+                  wordWrap: 'on',
+                }}
+              />
+            </div>
           )}
 
           <button
             onClick={analyze}
-            className="w-full bg-emerald-600 p-3 rounded font-semibold"
+            disabled={loading}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 transition p-3 rounded font-semibold"
           >
             {loading ? 'Analyzing...' : 'Analyze'}
           </button>
+
+          {error && (
+            <p className="text-red-400 text-sm">{error}</p>
+          )}
         </div>
+
       </div>
     </main>
   );
