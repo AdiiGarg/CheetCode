@@ -39,7 +39,7 @@ export default function DashboardPage() {
     hard: 0,
   });
 
-  const [recommendations, setRecommendations] = useState<string>('');
+  const [recommendations, setRecommendations] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -68,8 +68,8 @@ export default function DashboardPage() {
   }, [session, status]);
 
   return (
-    <main className="min-h-screen landing-bg text-white px-6 pt-32 pb-20 overflow-y-auto">
-      <div className="max-w-6xl mx-auto space-y-14">
+    <main className="min-h-screen landing-bg text-white px-6 pt-32 pb-24">
+      <div className="max-w-6xl mx-auto space-y-16">
 
         {/* HEADER */}
         <h1 className="text-4xl font-bold tracking-tight">
@@ -110,21 +110,36 @@ export default function DashboardPage() {
 function parseRecommendations(text: string): RecommendationSection[] {
   if (!text) return [];
 
-  const raw = text.split('\n\n**');
-  return raw.map((block, i) => {
-    if (i === 0) {
-      return {
-        title: 'Overview',
-        content: block.replace(/\*\*/g, '').trim(),
-      };
-    }
+  const blocks = text.split('\n\n');
+  const sections: RecommendationSection[] = [];
 
-    const [title, ...rest] = block.split('**:\n');
-    return {
-      title: title.replace(/\*\*/g, '').trim(),
-      content: rest.join('\n').trim(),
-    };
+  let currentTitle = 'Overview';
+  let currentContent: string[] = [];
+
+  blocks.forEach(block => {
+    if (block.startsWith('**') && block.includes(':')) {
+      if (currentContent.length) {
+        sections.push({
+          title: currentTitle,
+          content: currentContent.join('\n\n'),
+        });
+      }
+
+      currentTitle = block.replace(/\*\*/g, '').replace(':', '').trim();
+      currentContent = [];
+    } else {
+      currentContent.push(block);
+    }
   });
+
+  if (currentContent.length) {
+    sections.push({
+      title: currentTitle,
+      content: currentContent.join('\n\n'),
+    });
+  }
+
+  return sections;
 }
 
 /* ---------------- COMPONENTS ---------------- */
@@ -159,7 +174,7 @@ function AIRecommendations({ text }: { text: string }) {
   const sections = parseRecommendations(text);
 
   return (
-    <div className="space-y-6">
+    <section className="space-y-8">
       <h2 className="text-2xl font-bold flex items-center gap-2 text-emerald-400">
         🤖 AI Recommendations
       </h2>
@@ -173,7 +188,7 @@ function AIRecommendations({ text }: { text: string }) {
             border border-zinc-800
             rounded-2xl
             p-6
-            shadow-[0_0_40px_rgba(16,185,129,0.08)]
+            shadow-[0_0_40px_rgba(16,185,129,0.06)]
           "
         >
           <h3 className="text-lg font-semibold text-emerald-400 mb-3">
@@ -189,6 +204,6 @@ function AIRecommendations({ text }: { text: string }) {
       <p className="text-xs text-zinc-500">
         Generated from your recent submissions and coding patterns
       </p>
-    </div>
+    </section>
   );
 }
