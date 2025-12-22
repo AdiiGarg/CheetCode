@@ -49,7 +49,7 @@ export default function DashboardPage() {
   }, [session, status]);
 
   return (
-    <main className="min-h-screen landing-bg text-white p-6 pt-26">
+    <main className="min-h-screen landing-bg text-white p-6 pt-28">
       <div className="max-w-6xl mx-auto space-y-12 backdrop-blur-sm">
 
         <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
