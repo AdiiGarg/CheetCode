@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-// 🔥 SSR OFF for charts
+// 🔥 Charts client-only
 const DashboardCharts = dynamic(
   () => import('../components/DashboardCharts'),
   { ssr: false }
@@ -39,33 +39,33 @@ export default function DashboardPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
 
-    // 🤖 Recommendations (SAFE PARSE)
+    // 🤖 AI Recommendations (safe parse)
     axios
       .get(`${BACKEND_URL}/analyze/recommendations`, {
         params: { email },
       })
       .then((res) => {
         const data = res.data;
-
-        // 🔒 HARD SAFETY
-        if (typeof data === 'string') {
-          setRecommendations(data);
-        } else if (typeof data?.result === 'string') {
+        if (typeof data === 'string') setRecommendations(data);
+        else if (typeof data?.result === 'string')
           setRecommendations(data.result);
-        } else {
-          setRecommendations('');
-        }
+        else setRecommendations('');
       })
       .catch(() => setRecommendations(''));
   }, [session, status]);
 
   return (
     <main className="min-h-screen bg-zinc-900 text-white p-6">
-      <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+      <div className="max-w-6xl mx-auto space-y-10">
 
+        {/* HEADER */}
+        <h1 className="text-3xl font-bold tracking-tight">
+          Dashboard
+        </h1>
+
+        {/* LOADING / AUTH STATES */}
         {status === 'loading' && (
-          <p className="text-zinc-400">Loading session...</p>
+          <p className="text-zinc-400">Loading session…</p>
         )}
 
         {status === 'unauthenticated' && (
@@ -73,37 +73,54 @@ export default function DashboardPage() {
         )}
 
         {status === 'authenticated' && loading && (
-          <p className="text-zinc-400">Loading stats...</p>
+          <p className="text-zinc-400">Loading stats…</p>
         )}
 
+        {/* STATS */}
         {status === 'authenticated' && !loading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
             <StatCard title="Total Submissions" value={stats.total} />
-            <StatCard title="Easy" value={stats.easy} />
-            <StatCard title="Medium" value={stats.medium} />
-            <StatCard title="Hard" value={stats.hard} />
+            <StatCard title="Easy" value={stats.easy} accent="emerald" />
+            <StatCard title="Medium" value={stats.medium} accent="blue" />
+            <StatCard title="Hard" value={stats.hard} accent="rose" />
           </div>
         )}
 
-        {/* 📊 Charts */}
+        {/* CHART */}
         {status === 'authenticated' && !loading && stats.total > 0 && (
-          <div className="mt-10">
-            <DashboardCharts
-              easy={stats.easy}
-              medium={stats.medium}
-              hard={stats.hard}
-            />
-          </div>
+          <DashboardCharts
+            easy={stats.easy}
+            medium={stats.medium}
+            hard={stats.hard}
+          />
         )}
 
-        {/* 🤖 AI Recommendations */}
+        {/* 🤖 AI RECOMMENDATIONS – COOL VERSION */}
         {status === 'authenticated' && recommendations && (
-          <div className="mt-10 bg-zinc-800 border border-zinc-700 rounded-xl p-6">
-            <h2 className="text-xl font-semibold mb-3">
-              AI Recommendations
+          <div
+            className="
+              relative
+              bg-zinc-900/70
+              backdrop-blur-xl
+              border border-zinc-800
+              rounded-2xl
+              p-6
+              shadow-[0_0_40px_rgba(0,0,0,0.6)]
+            "
+          >
+            {/* Accent glow */}
+            <div className="absolute inset-0 rounded-2xl ring-1 ring-emerald-500/10 pointer-events-none" />
+
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              🤖 <span className="text-emerald-400">AI Recommendations</span>
             </h2>
-            <div className="whitespace-pre-wrap text-zinc-200 text-sm">
+
+            <div className="text-zinc-200 text-sm leading-relaxed whitespace-pre-wrap">
               {recommendations}
+            </div>
+
+            <div className="mt-4 text-xs text-zinc-500">
+              Generated from your recent submissions & patterns
             </div>
           </div>
         )}
@@ -112,11 +129,41 @@ export default function DashboardPage() {
   );
 }
 
-function StatCard({ title, value }: { title: string; value: number }) {
+/* ---------------- COMPONENTS ---------------- */
+
+function StatCard({
+  title,
+  value,
+  accent = 'zinc',
+}: {
+  title: string;
+  value: number;
+  accent?: 'emerald' | 'blue' | 'rose' | 'zinc';
+}) {
+  const accentMap: Record<string, string> = {
+    emerald: 'text-emerald-400',
+    blue: 'text-blue-400',
+    rose: 'text-rose-400',
+    zinc: 'text-white',
+  };
+
   return (
-    <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
+    <div
+      className="
+        bg-zinc-800/70
+        backdrop-blur
+        border border-zinc-700
+        rounded-xl
+        p-6
+        transition
+        hover:shadow-[0_0_25px_rgba(0,0,0,0.5)]
+        hover:-translate-y-0.5
+      "
+    >
       <p className="text-zinc-400 text-sm">{title}</p>
-      <p className="text-3xl font-bold mt-2">{value}</p>
+      <p className={`text-3xl font-bold mt-2 ${accentMap[accent]}`}>
+        {value}
+      </p>
     </div>
   );
 }
