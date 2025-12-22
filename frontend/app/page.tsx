@@ -146,11 +146,11 @@ public:
 
         {/* HEADER */}
         <div className="text-center mb-10">
-          <div className="flex justify-center items-center gap-3 mb-3">
-            <img src="/logo.png" className="w-14 h-12" />
+          <div className="flex justify-center items-center gap-0 mb-3">
+            <img src="/logo.png" className="w-15 h-12" />
             <h1 className="text-4xl font-semibold text-white">CheetCode</h1>
           </div>
-          <p className="text-zinc-400 text-lg">
+          <p className="text-zinc-500 text-lg">
             AI-powered LeetCode problem analysis
           </p>
         </div>
@@ -194,7 +194,7 @@ public:
           {leetcodeError && <p className="text-red-400 text-sm">{leetcodeError}</p>}
 
           {level && (
-            <div className="inline-block px-4 py-1 rounded bg-zinc-800 border border-zinc-700 text-sm">
+            <div className="inline-block px-4 py-1 rounded bg-zinc-800 border border-zinc-700 text-sm text-white">
               Detected Difficulty:{' '}
               <span className="uppercase font-semibold text-emerald-400">
                 {level}
@@ -256,7 +256,7 @@ public:
                 ))}
             </div>
 
-            <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-sm whitespace-pre-wrap leading-relaxed">
+            <div className="bg-zinc-950 border text-zinc-200 border-zinc-800 rounded-xl p-4 text-sm whitespace-pre-wrap leading-relaxed">
               {activeTab === 'explanation' && analysis.explanation}
 
               {activeTab === 'complexity' && (
@@ -271,7 +271,7 @@ public:
                   <div key={i} className="mb-6">
                     <h4 className="font-semibold text-emerald-400">{a.title}</h4>
                     <p className="mt-1">{a.description}</p>
-                    <pre className="mt-3 bg-black/60 p-4 rounded-lg overflow-x-auto">
+                    <pre className="mt-3 bg-black/60 p-4 rounded-lg overflow-x-auto text-white">
                       <code>{a.code}</code>
                     </pre>
                     <p className="mt-2 text-xs text-zinc-400">
