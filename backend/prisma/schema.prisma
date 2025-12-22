@@ -19,6 +19,7 @@ model Submission {
   id        String   @id @default(uuid())
   problem   String
   code      String
+  title     String
   analysis  String
   level     String
   userId    String

@@ -155,9 +155,10 @@ ${data.code}
       // 💾 SAVE SUBMISSION (NO topics!)
       const submission = await this.prisma.submission.create({
         data: {
+          title: data.title ?? null,
           problem: data.problem,
           code: data.code,
-          analysis: raw,
+          analysis: JSON.stringify(normalized),
           level: finalLevel,
           user: { connect: { id: user.id } },
         },
