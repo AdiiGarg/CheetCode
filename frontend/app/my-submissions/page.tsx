@@ -30,6 +30,8 @@ export default function MySubmissionsPage() {
   const [difficulty, setDifficulty] =
     useState<'all' | 'easy' | 'medium' | 'hard'>('all');
   const [sort, setSort] = useState<'latest' | 'oldest'>('latest');
+
+  // ✅ only one expanded at a time
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   /* FETCH */
@@ -56,14 +58,18 @@ export default function MySubmissionsPage() {
 
     if (search.trim()) {
       list = list.filter(s =>
-        (getTitle(s) || '').toLowerCase().includes(search.toLowerCase())
+        (getTitle(s) || '')
+          .toLowerCase()
+          .includes(search.toLowerCase())
       );
     }
 
     list.sort((a, b) =>
       sort === 'latest'
-        ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        ? new Date(b.createdAt).getTime() -
+          new Date(a.createdAt).getTime()
+        : new Date(a.createdAt).getTime() -
+          new Date(b.createdAt).getTime()
     );
 
     return list;
@@ -75,9 +81,11 @@ export default function MySubmissionsPage() {
 
         {/* HEADER */}
         <header>
-          <h1 className="text-4xl font-bold tracking-tight">My Submissions</h1>
+          <h1 className="text-4xl font-bold tracking-tight">
+            My Submissions
+          </h1>
           <p className="text-zinc-400 mt-2">
-            Revisit, expand and re-analyze your problems
+            Revisit and review your past AI analyses
           </p>
         </header>
 
@@ -117,11 +125,15 @@ export default function MySubmissionsPage() {
           </div>
         </div>
 
-        {loading && <p className="text-zinc-400">Loading submissions...</p>}
+        {loading && (
+          <p className="text-zinc-400">Loading submissions...</p>
+        )}
 
         {!loading && filtered.length === 0 && (
           <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-8 text-center">
-            <p className="text-zinc-300">No submissions found.</p>
+            <p className="text-zinc-300">
+              No submissions found.
+            </p>
           </div>
         )}
 
@@ -133,7 +145,9 @@ export default function MySubmissionsPage() {
               sub={sub}
               expanded={expandedId === sub._id}
               onToggle={() =>
-                setExpandedId(expandedId === sub._id ? null : sub._id)
+                setExpandedId(
+                  expandedId === sub._id ? null : sub._id
+                )
               }
             />
           ))}
@@ -162,9 +176,11 @@ function SubmissionCard({
 
   return (
     <div className="bg-zinc-900/70 backdrop-blur-xl border border-zinc-800 rounded-2xl p-6 transition">
-      <div
-        className="cursor-pointer"
+
+      {/* HEADER (CLICK ONLY HERE) */}
+      <button
         onClick={onToggle}
+        className="w-full text-left"
       >
         <div className="flex justify-between items-center mb-2">
           <span className="text-xs text-zinc-400">
@@ -180,16 +196,26 @@ function SubmissionCard({
         <h3 className="text-lg font-semibold">
           {getTitle(sub)}
         </h3>
-      </div>
+      </button>
 
-      {/* EXPANDED */}
+      {/* EXPANDED VIEW */}
       {expanded && (
-        <div className="mt-4 border-t border-zinc-800 pt-4 space-y-4">
-          <p className="text-sm text-zinc-300 leading-relaxed">
-            {cleanText(sub.problem || '')}
-          </p>
+        <div className="mt-5 border-t border-zinc-800 pt-4 space-y-5">
 
-          {sub.analysis?.betterApproaches && (
+          {/* Explanation */}
+          {sub.analysis?.explanation && (
+            <div>
+              <p className="text-sm font-semibold text-emerald-400 mb-1">
+                Explanation
+              </p>
+              <p className="text-sm text-zinc-300 leading-relaxed">
+                {sub.analysis.explanation}
+              </p>
+            </div>
+          )}
+
+          {/* Key Points */}
+          {sub.analysis?.betterApproaches?.length ? (
             <div>
               <p className="text-sm font-semibold text-emerald-400 mb-2">
                 Key Takeaways
@@ -202,8 +228,9 @@ function SubmissionCard({
                   ))}
               </ul>
             </div>
-          )}
+          ) : null}
 
+          {/* Tips */}
           {sub.analysis?.nextSteps && (
             <div>
               <p className="text-sm font-semibold text-emerald-400 mb-1">
@@ -214,15 +241,6 @@ function SubmissionCard({
               </p>
             </div>
           )}
-
-          <button
-            onClick={() => {
-              window.location.href = '/';
-            }}
-            className="mt-2 px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 transition"
-          >
-            Re-Analyze
-          </button>
         </div>
       )}
     </div>
@@ -234,15 +252,10 @@ function SubmissionCard({
 function getTitle(sub: Submission) {
   if (sub.title) return sub.title;
   if (sub.problem?.startsWith('Title:')) {
-    return sub.problem.split('\n')[0].replace('Title:', '').trim();
+    return sub.problem
+      .split('\n')[0]
+      .replace('Title:', '')
+      .trim();
   }
   return 'Untitled Problem';
-}
-
-function cleanText(text: string) {
-  return text
-    .replace(/<[^>]*>?/gm, '')
-    .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
-    .slice(0, 400);
 }
