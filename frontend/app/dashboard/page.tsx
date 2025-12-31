@@ -83,6 +83,7 @@ export default function DashboardPage() {
             <StatCard title="Easy" value={stats.easy} accent="emerald" />
             <StatCard title="Medium" value={stats.medium} accent="blue" />
             <StatCard title="Hard" value={stats.hard} accent="rose" />
+            
           </div>
         )}
 

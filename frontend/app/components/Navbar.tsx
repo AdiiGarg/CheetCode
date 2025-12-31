@@ -12,7 +12,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
 
         {/* LOGO */}
-        <Link href="/" className="flex items-center gap-0">
+        <Link href="/" className="flex items-center gap-0 relative">
           <Image
             src="/logo.png"
             alt="CheetCode"
@@ -20,9 +20,27 @@ export default function Navbar() {
             height={32}
             priority
           />
-          <span className="text-lg font-semibold text-white">
-            CheetCode
-          </span>
+
+          {/* TEXT WRAPPER */}
+          <div className="relative flex flex-col leading-none">
+            {/* 2026 TAG */}
+            <span className="
+              absolute 
+              -top-3 
+              left-0 
+              text-[10px] 
+              tracking-[0.25em] 
+              text-zinc-400 
+              font-medium
+              select-none
+            ">
+              2026
+            </span>
+
+            <span className="text-lg font-semibold text-white">
+              CheetCode
+            </span>
+          </div>
         </Link>
 
         {/* RIGHT SIDE */}
